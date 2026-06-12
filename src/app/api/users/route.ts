@@ -1,19 +1,7 @@
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  role: "admin" | "editor" | "viewer";
-  age: number;
-}
-
-const users: User[] = [
-  { id: 1, name: "Tom", email: "tom@example.com", role: "admin", age: 28 },
-  { id: 2, name: "Jack", email: "jack@example.com", role: "editor", age: 35 },
-];
-
-let nextId = 3;
+import { prisma } from "@/lib/prisma";
 
 export async function GET() {
+  const users = await prisma.user.findMany();
   return Response.json({ code: 0, message: "success", data: users });
 }
 
@@ -30,14 +18,15 @@ export async function POST(request: Request) {
     return Response.json({ code: 400, message: "role must be admin, editor, or viewer" });
   }
 
-  const user: User = {
-    id: nextId++,
-    name: body.name,
-    email: body.email,
-    role: body.role,
-    age: typeof body.age === "number" ? body.age : 0,
-  };
-  users.push(user);
+  const user = await prisma.user.create({
+    data: {
+      name: body.name,
+      email: body.email,
+      role: body.role,
+      age: typeof body.age === "number" ? body.age : 0,
+    },
+  });
+
   return Response.json({ code: 0, message: "用户创建成功", data: user });
 }
 
@@ -48,17 +37,22 @@ export async function PUT(request: Request) {
     return Response.json({ code: 400, message: "id is required" });
   }
 
-  const index = users.findIndex((u) => u.id === body.id);
-  if (index === -1) {
+  const existing = await prisma.user.findUnique({ where: { id: body.id } });
+  if (!existing) {
     return Response.json({ code: 404, message: "用户不存在" });
   }
 
-  if (body.name !== undefined) users[index].name = body.name;
-  if (body.email !== undefined) users[index].email = body.email;
-  if (["admin", "editor", "viewer"].includes(body.role)) users[index].role = body.role;
-  if (body.age !== undefined) users[index].age = body.age;
+  const user = await prisma.user.update({
+    where: { id: body.id },
+    data: {
+      ...(body.name !== undefined && { name: body.name }),
+      ...(body.email !== undefined && { email: body.email }),
+      ...(["admin", "editor", "viewer"].includes(body.role) && { role: body.role }),
+      ...(body.age !== undefined && { age: body.age }),
+    },
+  });
 
-  return Response.json({ code: 0, message: "用户更新成功", data: users[index] });
+  return Response.json({ code: 0, message: "用户更新成功", data: user });
 }
 
 export async function DELETE(request: Request) {
@@ -68,11 +62,11 @@ export async function DELETE(request: Request) {
     return Response.json({ code: 400, message: "id is required" });
   }
 
-  const index = users.findIndex((u) => u.id === body.id);
-  if (index === -1) {
+  const existing = await prisma.user.findUnique({ where: { id: body.id } });
+  if (!existing) {
     return Response.json({ code: 404, message: "用户不存在" });
   }
 
-  users.splice(index, 1);
+  await prisma.user.delete({ where: { id: body.id } });
   return Response.json({ code: 0, message: "用户删除成功" });
 }
