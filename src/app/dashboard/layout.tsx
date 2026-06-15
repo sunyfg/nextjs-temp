@@ -1,16 +1,5 @@
 import Link from "next/link";
-import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
-
-async function getCurrentUserRole(): Promise<string | null> {
-  const session = await auth();
-  if (!session?.user?.id) return null;
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { role: true },
-  });
-  return user?.role ?? null;
-}
+import { getCurrentUserRole, MANAGE_USERS_ROLES } from "@/lib/auth-utils";
 
 export default async function DashboardLayout({
   children,
@@ -18,7 +7,7 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const role = await getCurrentUserRole();
-  const canManageUsers = role === "admin" || role === "editor";
+  const canManageUsers = role !== null && (MANAGE_USERS_ROLES as readonly string[]).includes(role);
 
   const navItems = [
     { href: "/dashboard", label: "Overview" },
