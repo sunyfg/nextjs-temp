@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
@@ -71,6 +72,20 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return Response.json({ code: 401, message: "Unauthorized" });
+  }
+
+  const currentUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: true },
+  });
+
+  if (!currentUser || currentUser.role !== "admin") {
+    return Response.json({ code: 403, message: "仅管理员可删除用户" });
+  }
+
   const body = await request.json();
 
   if (!body.id) {

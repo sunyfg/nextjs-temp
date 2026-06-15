@@ -30,7 +30,7 @@ const emptyForm: FormFields = {
   image: "",
 };
 
-export default function UsersClient() {
+export default function UsersClient({ isAdmin }: { isAdmin: boolean }) {
   const [users, setUsers] = useState<User[]>([]);
   const [form, setForm] = useState<FormFields>(emptyForm);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -148,12 +148,14 @@ export default function UsersClient() {
                   >
                     Edit
                   </button>
-                  <button
-                    onClick={() => setDeletingUser(user)}
-                    className="rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700"
-                  >
-                    Delete
-                  </button>
+                  {isAdmin && (
+                    <button
+                      onClick={() => setDeletingUser(user)}
+                      className="rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

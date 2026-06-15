@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { authorizeByRole, MANAGE_USERS_ROLES } from "@/lib/auth-utils";
+import { authorizeByRole, getCurrentUser, MANAGE_USERS_ROLES } from "@/lib/auth-utils";
 import UsersClient from "./users-client";
 
 export default async function UsersPage() {
@@ -18,5 +18,7 @@ export default async function UsersPage() {
     );
   }
 
-  return <UsersClient />;
+  const user = await getCurrentUser();
+
+  return <UsersClient isAdmin={user?.role === "admin"} />;
 }
