@@ -3,17 +3,33 @@ import { prisma } from "@/lib/prisma";
 
 export const MANAGE_USERS_ROLES = ["admin", "editor"] as const;
 
+export type CurrentUser = {
+  id: string;
+  name: string | null;
+  email: string | null;
+  role: string;
+};
+
+/**
+ * Fetch the current authenticated user from the database.
+ * Returns `null` if not logged in or user not found.
+ */
+export async function getCurrentUser(): Promise<CurrentUser | null> {
+  const session = await auth();
+  if (!session?.user?.id) return null;
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { id: true, name: true, email: true, role: true },
+  });
+  return user;
+}
+
 /**
  * Fetch the current authenticated user's role from the database.
  * Returns `null` if not logged in or user not found.
  */
 export async function getCurrentUserRole(): Promise<string | null> {
-  const session = await auth();
-  if (!session?.user?.id) return null;
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { role: true },
-  });
+  const user = await getCurrentUser();
   return user?.role ?? null;
 }
 

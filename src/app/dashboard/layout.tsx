@@ -1,13 +1,14 @@
 import Link from "next/link";
-import { getCurrentUserRole, MANAGE_USERS_ROLES } from "@/lib/auth-utils";
+import { getCurrentUser, MANAGE_USERS_ROLES } from "@/lib/auth-utils";
+import UserMenu from "./user-menu";
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const role = await getCurrentUserRole();
-  const canManageUsers = role !== null && (MANAGE_USERS_ROLES as readonly string[]).includes(role);
+  const user = await getCurrentUser();
+  const canManageUsers = user !== null && (MANAGE_USERS_ROLES as readonly string[]).includes(user.role);
 
   const navItems = [
     { href: "/dashboard", label: "Overview" },
@@ -17,8 +18,8 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex flex-1">
-      <aside className="w-56 shrink-0 border-r border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-black">
-        <nav className="flex flex-col gap-2">
+      <aside className="flex w-56 shrink-0 flex-col border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black">
+        <nav className="flex flex-1 flex-col gap-2 overflow-y-auto p-6">
           {navItems.map((item) => (
             <Link
               key={item.href}
@@ -29,6 +30,11 @@ export default async function DashboardLayout({
             </Link>
           ))}
         </nav>
+        {user && (
+          <div className="border-t border-zinc-200 p-3 dark:border-zinc-800">
+            <UserMenu user={user} />
+          </div>
+        )}
       </aside>
       <main className="flex-1 p-8">{children}</main>
     </div>
