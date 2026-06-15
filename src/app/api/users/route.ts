@@ -1,3 +1,4 @@
+import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
@@ -18,10 +19,17 @@ export async function POST(request: Request) {
     return Response.json({ code: 400, message: "role must be admin, editor, or viewer" });
   }
 
+  const hashedPassword =
+    body.password && typeof body.password === "string" && body.password.length >= 6
+      ? await bcrypt.hash(body.password, 10)
+      : undefined;
+
   const user = await prisma.user.create({
     data: {
       name: body.name,
       email: body.email,
+      hashedPassword,
+      image: typeof body.image === "string" ? body.image : undefined,
       role: body.role,
       age: typeof body.age === "number" ? body.age : 0,
     },
@@ -42,6 +50,11 @@ export async function PUT(request: Request) {
     return Response.json({ code: 404, message: "用户不存在" });
   }
 
+  const hashedPassword =
+    body.password && typeof body.password === "string" && body.password.length >= 6
+      ? await bcrypt.hash(body.password, 10)
+      : undefined;
+
   const user = await prisma.user.update({
     where: { id: body.id },
     data: {
@@ -49,6 +62,8 @@ export async function PUT(request: Request) {
       ...(body.email !== undefined && { email: body.email }),
       ...(["admin", "editor", "viewer"].includes(body.role) && { role: body.role }),
       ...(body.age !== undefined && { age: body.age }),
+      ...(hashedPassword !== undefined && { hashedPassword }),
+      ...(body.image !== undefined && { image: body.image || null }),
     },
   });
 

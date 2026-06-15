@@ -12,13 +12,29 @@ interface User {
 
 const ROLE_OPTIONS = ["admin", "editor", "viewer"] as const;
 
-const emptyForm = { name: "", email: "", role: "viewer" as const, age: 0 };
+type FormFields = {
+  name: string;
+  email: string;
+  role: "admin" | "editor" | "viewer";
+  age: number;
+  password: string;
+  image: string;
+};
+
+const emptyForm: FormFields = {
+  name: "",
+  email: "",
+  role: "viewer",
+  age: 0,
+  password: "",
+  image: "",
+};
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
-  const [form, setForm] = useState(emptyForm);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState(emptyForm);
+  const [form, setForm] = useState<FormFields>(emptyForm);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
 
   const fetchUsers = useCallback(async () => {
@@ -41,24 +57,33 @@ export default function UsersPage() {
     const json = await res.json();
     if (json.code === 0) {
       setForm(emptyForm);
+      setShowCreateModal(false);
       fetchUsers();
     }
   }
 
   function startEdit(user: User) {
-    setEditingId(user.id);
-    setEditForm({ name: user.name, email: user.email, role: user.role, age: user.age });
+    setEditingUser(user);
   }
 
-  async function handleUpdate(id: string) {
+  async function handleUpdate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingUser) return;
+    const formData = new FormData(e.target as HTMLFormElement);
+    const name = formData.get("name") as string;
+    const email = formData.get("email") as string;
+    const role = formData.get("role") as string;
+    const age = Number(formData.get("age"));
+    const password = formData.get("password") as string;
+    const image = formData.get("image") as string;
     const res = await fetch("/api/users", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, ...editForm }),
+      body: JSON.stringify({ id: editingUser.id, name, email, role, age, password, image }),
     });
     const json = await res.json();
     if (json.code === 0) {
-      setEditingId(null);
+      setEditingUser(null);
       fetchUsers();
     }
   }
@@ -85,58 +110,13 @@ export default function UsersPage() {
         Manage user accounts and permissions.
       </p>
 
-      {/* Create form */}
-      <form
-        onSubmit={handleCreate}
-        className="mt-6 flex flex-wrap items-end gap-3 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-black"
+      {/* Create button */}
+      <button
+        onClick={() => setShowCreateModal(true)}
+        className="mt-6 rounded-lg bg-black px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
       >
-        <fieldset className="flex flex-col gap-1">
-          <label className="text-xs text-zinc-500">Name</label>
-          <input
-            required
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-black outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-          />
-        </fieldset>
-        <fieldset className="flex flex-col gap-1">
-          <label className="text-xs text-zinc-500">Email</label>
-          <input
-            required
-            type="email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-black outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-          />
-        </fieldset>
-        <fieldset className="flex flex-col gap-1">
-          <label className="text-xs text-zinc-500">Role</label>
-          <select
-            value={form.role}
-            onChange={(e) => setForm({ ...form, role: e.target.value as User["role"] })}
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-black outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-          >
-            {ROLE_OPTIONS.map((r) => (
-              <option key={r} value={r}>{r}</option>
-            ))}
-          </select>
-        </fieldset>
-        <fieldset className="flex flex-col gap-1">
-          <label className="text-xs text-zinc-500">Age</label>
-          <input
-            type="number"
-            value={form.age}
-            onChange={(e) => setForm({ ...form, age: Number(e.target.value) })}
-            className="w-20 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-black outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-          />
-        </fieldset>
-        <button
-          type="submit"
-          className="rounded-lg bg-black px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-        >
-          Add User
-        </button>
-      </form>
+        + Add User
+      </button>
 
       {/* Users table */}
       <div className="mt-6 overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800">
@@ -151,87 +131,211 @@ export default function UsersPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-            {users.map((user) =>
-              editingId === user.id ? (
-                <tr key={user.id} className="bg-white dark:bg-black">
-                  <td className="px-4 py-2">
-                    <input
-                      value={editForm.name}
-                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                      className="w-full rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-                    />
-                  </td>
-                  <td className="px-4 py-2">
-                    <input
-                      value={editForm.email}
-                      onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                      className="w-full rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-                    />
-                  </td>
-                  <td className="px-4 py-2">
-                    <select
-                      value={editForm.role}
-                      onChange={(e) => setEditForm({ ...editForm, role: e.target.value as User["role"] })}
-                      className="rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-                    >
-                      {ROLE_OPTIONS.map((r) => (
-                        <option key={r} value={r}>{r}</option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="px-4 py-2">
-                    <input
-                      type="number"
-                      value={editForm.age}
-                      onChange={(e) => setEditForm({ ...editForm, age: Number(e.target.value) })}
-                      className="w-16 rounded border border-zinc-300 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-                    />
-                  </td>
-                  <td className="flex gap-2 px-4 py-2">
-                    <button
-                      onClick={() => handleUpdate(user.id)}
-                      className="rounded bg-green-600 px-3 py-1 text-xs font-medium text-white hover:bg-green-700"
-                    >
-                      Save
-                    </button>
-                    <button
-                      onClick={() => setEditingId(null)}
-                      className="rounded bg-zinc-500 px-3 py-1 text-xs font-medium text-white hover:bg-zinc-600"
-                    >
-                      Cancel
-                    </button>
-                  </td>
-                </tr>
-              ) : (
-                <tr key={user.id} className="bg-white dark:bg-black">
-                  <td className="px-4 py-3 text-black dark:text-zinc-50">{user.name}</td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{user.email}</td>
-                  <td className="px-4 py-3">
-                    <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{user.age}</td>
-                  <td className="flex gap-2 px-4 py-3">
-                    <button
-                      onClick={() => startEdit(user)}
-                      className="rounded bg-zinc-800 px-3 py-1 text-xs font-medium text-white hover:bg-zinc-700 dark:bg-zinc-200 dark:text-black dark:hover:bg-zinc-300"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => setDeletingUser(user)}
-                      className="rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              )
-            )}
+            {users.map((user) => (
+              <tr key={user.id} className="bg-white dark:bg-black">
+                <td className="px-4 py-3 text-black dark:text-zinc-50">{user.name}</td>
+                <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{user.email}</td>
+                <td className="px-4 py-3">
+                  <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+                    {user.role}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{user.age}</td>
+                <td className="flex gap-2 px-4 py-3">
+                  <button
+                    onClick={() => startEdit(user)}
+                    className="rounded bg-zinc-800 px-3 py-1 text-xs font-medium text-white hover:bg-zinc-700 dark:bg-zinc-200 dark:text-black dark:hover:bg-zinc-300"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => setDeletingUser(user)}
+                    className="rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
+
+      {/* Create user modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-lg rounded-xl border border-zinc-200 bg-white p-6 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+            <h3 className="text-lg font-semibold text-black dark:text-zinc-50">
+              Create User
+            </h3>
+            <form onSubmit={handleCreate} className="mt-4 flex flex-col gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                <fieldset className="flex flex-col gap-1">
+                  <label className="text-xs text-zinc-500">Name</label>
+                  <input
+                    required
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-black outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                  />
+                </fieldset>
+                <fieldset className="flex flex-col gap-1">
+                  <label className="text-xs text-zinc-500">Email</label>
+                  <input
+                    required
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => setForm({ ...form, email: e.target.value })}
+                    className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-black outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                  />
+                </fieldset>
+                <fieldset className="flex flex-col gap-1">
+                  <label className="text-xs text-zinc-500">Password</label>
+                  <input
+                    type="password"
+                    value={form.password}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    placeholder="留空不设置密码"
+                    className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-black outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                  />
+                </fieldset>
+                <fieldset className="flex flex-col gap-1">
+                  <label className="text-xs text-zinc-500">Role</label>
+                  <select
+                    value={form.role}
+                    onChange={(e) => setForm({ ...form, role: e.target.value as User["role"] })}
+                    className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-black outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                  >
+                    {ROLE_OPTIONS.map((r) => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                </fieldset>
+                <fieldset className="flex flex-col gap-1">
+                  <label className="text-xs text-zinc-500">Age</label>
+                  <input
+                    type="number"
+                    value={form.age}
+                    onChange={(e) => setForm({ ...form, age: Number(e.target.value) })}
+                    className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-black outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                  />
+                </fieldset>
+                <fieldset className="flex flex-col gap-1">
+                  <label className="text-xs text-zinc-500">Avatar URL</label>
+                  <input
+                    value={form.image}
+                    onChange={(e) => setForm({ ...form, image: e.target.value })}
+                    placeholder="选填"
+                    className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-black outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                  />
+                </fieldset>
+              </div>
+              <div className="mt-2 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setShowCreateModal(false); setForm(emptyForm); }}
+                  className="rounded-lg border border-zinc-300 bg-white px-4 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-black px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+                >
+                  Create
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit user modal */}
+      {editingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-lg rounded-xl border border-zinc-200 bg-white p-6 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+            <h3 className="text-lg font-semibold text-black dark:text-zinc-50">
+              Edit User
+            </h3>
+            <form onSubmit={handleUpdate} className="mt-4 flex flex-col gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                <fieldset className="flex flex-col gap-1">
+                  <label className="text-xs text-zinc-500">Name</label>
+                  <input
+                    name="name"
+                    required
+                    defaultValue={editingUser.name}
+                    className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-black outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                  />
+                </fieldset>
+                <fieldset className="flex flex-col gap-1">
+                  <label className="text-xs text-zinc-500">Email</label>
+                  <input
+                    name="email"
+                    required
+                    type="email"
+                    defaultValue={editingUser.email}
+                    className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-black outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                  />
+                </fieldset>
+                <fieldset className="flex flex-col gap-1">
+                  <label className="text-xs text-zinc-500">New Password</label>
+                  <input
+                    name="password"
+                    type="password"
+                    placeholder="留空不修改密码"
+                    className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-black outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                  />
+                </fieldset>
+                <fieldset className="flex flex-col gap-1">
+                  <label className="text-xs text-zinc-500">Role</label>
+                  <select
+                    name="role"
+                    defaultValue={editingUser.role}
+                    className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-black outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                  >
+                    {ROLE_OPTIONS.map((r) => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                </fieldset>
+                <fieldset className="flex flex-col gap-1">
+                  <label className="text-xs text-zinc-500">Age</label>
+                  <input
+                    name="age"
+                    type="number"
+                    defaultValue={editingUser.age}
+                    className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-black outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                  />
+                </fieldset>
+                <fieldset className="flex flex-col gap-1">
+                  <label className="text-xs text-zinc-500">Avatar URL</label>
+                  <input
+                    name="image"
+                    placeholder="选填"
+                    className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-black outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                  />
+                </fieldset>
+              </div>
+              <div className="mt-2 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingUser(null)}
+                  className="rounded-lg border border-zinc-300 bg-white px-4 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-green-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-green-700"
+                >
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Delete confirm dialog */}
       {deletingUser && (
