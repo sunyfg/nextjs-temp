@@ -3,13 +3,21 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/next-dev.mjs",
+    "dev:test": "APP_ENV=test node scripts/next-dev.mjs",
+    "dev:prod": "APP_ENV=prod node scripts/next-dev.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "db:migrate": "prisma migrate dev",
-    "db:seed": "prisma db seed",
-    "db:deploy": "prisma migrate deploy"
+    "db:migrate": "APP_ENV=local prisma migrate dev",
+    "db:migrate:test": "APP_ENV=test prisma migrate dev",
+    "db:seed": "APP_ENV=local prisma db seed",
+    "db:seed:test": "APP_ENV=test prisma db seed",
+    "db:deploy": "prisma migrate deploy",
+    "db:deploy:test": "APP_ENV=test prisma migrate deploy",
+    "db:deploy:prod": "APP_ENV=prod prisma migrate deploy",
+    "db:studio": "APP_ENV=local prisma studio",
+    "db:studio:test": "APP_ENV=test prisma studio"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",

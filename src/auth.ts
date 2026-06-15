@@ -47,12 +47,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.appEnv = process.env.APP_ENV || "local";
       }
       return token;
     },
     session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
+        session.user.appEnv = token.appEnv as string;
       }
       return session;
     },

@@ -1,7 +1,7 @@
-import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { auth } from '@/auth';
+import { prisma } from '@/lib/prisma';
 
-export const MANAGE_USERS_ROLES = ["admin", "editor"] as const;
+export const MANAGE_USERS_ROLES = ['admin', 'editor'] as const;
 
 export type CurrentUser = {
   id: string;
@@ -16,11 +16,13 @@ export type CurrentUser = {
  */
 export async function getCurrentUser(): Promise<CurrentUser | null> {
   const session = await auth();
+  console.log('🚀 ~ getCurrentUser ~ session:', session);
   if (!session?.user?.id) return null;
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: { id: true, name: true, email: true, role: true },
   });
+  console.log('🚀 ~ getCurrentUser ~ user:', user);
   return user;
 }
 
