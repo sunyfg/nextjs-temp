@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 interface User {
-  id: number;
+  id: string;
   name: string;
   email: string;
   role: "admin" | "editor" | "viewer";
@@ -17,8 +17,9 @@ const emptyForm = { name: "", email: "", role: "viewer" as const, age: 0 };
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [form, setForm] = useState(emptyForm);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState(emptyForm);
+  const [deletingUser, setDeletingUser] = useState<User | null>(null);
 
   const fetchUsers = useCallback(async () => {
     const res = await fetch("/api/users");
@@ -49,7 +50,7 @@ export default function UsersPage() {
     setEditForm({ name: user.name, email: user.email, role: user.role, age: user.age });
   }
 
-  async function handleUpdate(id: number) {
+  async function handleUpdate(id: string) {
     const res = await fetch("/api/users", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -62,14 +63,17 @@ export default function UsersPage() {
     }
   }
 
-  async function handleDelete(id: number) {
+  async function handleDelete(id: string) {
     const res = await fetch("/api/users", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
     const json = await res.json();
-    if (json.code === 0) fetchUsers();
+    if (json.code === 0) {
+      setDeletingUser(null);
+      fetchUsers();
+    }
   }
 
   return (
@@ -216,7 +220,7 @@ export default function UsersPage() {
                       Edit
                     </button>
                     <button
-                      onClick={() => handleDelete(user.id)}
+                      onClick={() => setDeletingUser(user)}
                       className="rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700"
                     >
                       Delete
@@ -228,6 +232,38 @@ export default function UsersPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Delete confirm dialog */}
+      {deletingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-sm rounded-xl border border-zinc-200 bg-white p-6 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+            <h3 className="text-lg font-semibold text-black dark:text-zinc-50">
+              Confirm Delete
+            </h3>
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
+              Are you sure you want to delete user{" "}
+              <span className="font-medium text-black dark:text-zinc-50">
+                {deletingUser.name}
+              </span>
+              ? This action cannot be undone.
+            </p>
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                onClick={() => setDeletingUser(null)}
+                className="rounded-lg border border-zinc-300 bg-white px-4 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(deletingUser.id)}
+                className="rounded-lg bg-red-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
