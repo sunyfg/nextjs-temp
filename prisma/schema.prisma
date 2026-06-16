@@ -8,20 +8,23 @@ datasource db {
 }
 
 model User {
-  id             String    @id @default(cuid())
+  id             String          @id @default(cuid())
   name           String?
-  email          String?   @unique
-  emailVerified  DateTime?
+  email          String?         @unique
+  emailVerified  DateTime?       @map("email_verified")
   image          String?
-  hashedPassword String?
-  role           String    @default("viewer")
-  age            Int       @default(0)
+  hashedPassword String?         @map("hashed_password")
+  age            Int             @default(0)
+  isSuperAdmin   Int             @default(0) @map("is_super_admin")
+  status         Int             @default(1) @map("status")
+  phone          String?         @db.VarChar(32) @map("phone")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
   accounts       Account[]
   sessions       Session[]
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  userRoles      SysUserRole[]
 
-  @@map("users")
+  @@map("sys_user")
 }
 
 model Account {
@@ -70,4 +73,62 @@ model Post {
   content String
 
   @@map("posts")
+}
+
+model SysRole {
+  id               Int                @id @default(autoincrement())
+  roleCode         String             @unique @map("role_code")
+  roleName         String             @map("role_name")
+  description      String?
+  status           Int                @default(1)
+  sortOrder        Int                @default(0) @map("sort_order")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+  userRoles        SysUserRole[]
+  rolePermissions  SysRolePermission[]
+
+  @@map("sys_role")
+}
+
+model SysUserRole {
+  id        Int       @id @default(autoincrement())
+  userId    String    @map("user_id")
+  roleId    Int       @map("role_id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      SysRole   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@map("sys_user_role")
+}
+
+model SysPermission {
+  id               Int                @id @default(autoincrement())
+  parentId         Int                @default(0) @map("parent_id")
+  permissionName   String             @map("permission_name")
+  permissionCode   String?            @map("permission_code")
+  type             String             // CATALOG, MENU, BUTTON, API
+  path             String?
+  component        String?
+  icon             String?
+  visible          Int                @default(1)
+  status           Int                @default(1)
+  sortOrder        Int                @default(0) @map("sort_order")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+  rolePermissions  SysRolePermission[]
+
+  @@map("sys_permission")
+}
+
+model SysRolePermission {
+  id           Int           @id @default(autoincrement())
+  roleId       Int           @map("role_id")
+  permissionId Int           @map("permission_id")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  role         SysRole       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   SysPermission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@map("sys_role_permission")
 }

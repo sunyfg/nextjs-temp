@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getCurrentUser, MANAGE_USERS_ROLES } from "@/lib/auth-utils";
+import { getCurrentUser, MANAGE_USERS_ROLES, MANAGE_ROLES_ROLES, MANAGE_PERMISSIONS_ROLES } from "@/lib/auth-utils";
 import UserMenu from "./user-menu";
 
 export default async function DashboardLayout({
@@ -8,12 +8,22 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const user = await getCurrentUser();
-  const canManageUsers = user !== null && (MANAGE_USERS_ROLES as readonly string[]).includes(user.role);
+  const roleCodes = user?.roleCodes ?? [];
+  const isSuperAdmin = roleCodes.includes("super_admin");
+  const canManageUsers = isSuperAdmin || roleCodes.some((r) => (MANAGE_USERS_ROLES as readonly string[]).includes(r));
+  const canManageRoles = isSuperAdmin || roleCodes.some((r) => (MANAGE_ROLES_ROLES as readonly string[]).includes(r));
+  const canManagePermissions = isSuperAdmin || roleCodes.some((r) => (MANAGE_PERMISSIONS_ROLES as readonly string[]).includes(r));
 
   const navItems = [
-    { href: "/dashboard", label: "Overview" },
-    ...(canManageUsers ? [{ href: "/dashboard/users", label: "Users" }] : []),
-    { href: "/dashboard/settings", label: "Settings" },
+    { href: "/dashboard", label: "数据分析" },
+    ...(canManageUsers ? [{ href: "/dashboard/users", label: "用户管理" }] : []),
+    ...(canManageRoles
+      ? [
+          { href: "/dashboard/roles", label: "角色管理" },
+          ...(canManagePermissions ? [{ href: "/dashboard/permissions", label: "权限管理" }] : []),
+        ]
+      : []),
+    { href: "/dashboard/settings", label: "系统设置" },
   ];
 
   return (

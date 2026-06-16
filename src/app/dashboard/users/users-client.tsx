@@ -2,36 +2,37 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+interface Role {
+  id: number;
+  roleCode: string;
+  roleName: string;
+}
+
 interface User {
   id: string;
   name: string;
   email: string;
-  role: "admin" | "editor" | "viewer";
   age: number;
+  phone: string | null;
+  status: number;
+  roles: Role[];
 }
 
-const ROLE_OPTIONS = ["admin", "editor", "viewer"] as const;
-
-type FormFields = {
-  name: string;
-  email: string;
-  role: "admin" | "editor" | "viewer";
-  age: number;
-  password: string;
-  image: string;
-};
-
-const emptyForm: FormFields = {
+const emptyForm = {
   name: "",
   email: "",
-  role: "viewer",
   age: 0,
   password: "",
   image: "",
+  phone: "",
+  roleIds: [] as number[],
 };
 
-export default function UsersClient({ isAdmin }: { isAdmin: boolean }) {
+type FormFields = typeof emptyForm;
+
+export default function UsersClient({ canDelete }: { canDelete: boolean }) {
   const [users, setUsers] = useState<User[]>([]);
+  const [allRoles, setAllRoles] = useState<Role[]>([]);
   const [form, setForm] = useState<FormFields>(emptyForm);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -43,9 +44,37 @@ export default function UsersClient({ isAdmin }: { isAdmin: boolean }) {
     if (json.code === 0) setUsers(json.data);
   }, []);
 
+  const fetchRoles = useCallback(async () => {
+    const res = await fetch("/api/roles");
+    const json = await res.json();
+    if (json.code === 0) setAllRoles(json.data);
+  }, []);
+
   useEffect(() => {
     fetchUsers();
-  }, [fetchUsers]);
+    fetchRoles();
+  }, [fetchUsers, fetchRoles]);
+
+  function toggleRole(roleId: number) {
+    setForm((prev) => ({
+      ...prev,
+      roleIds: prev.roleIds.includes(roleId)
+        ? prev.roleIds.filter((id) => id !== roleId)
+        : [...prev.roleIds, roleId],
+    }));
+  }
+
+  function toggleEditRole(roleId: number) {
+    if (!editingUser) return;
+    setEditingUser((prev) => {
+      if (!prev) return prev;
+      const currentIds = prev.roles.map((r) => r.id);
+      const newIds = currentIds.includes(roleId)
+        ? currentIds.filter((id) => id !== roleId)
+        : [...currentIds, roleId];
+      return { ...prev, roles: allRoles.filter((r) => newIds.includes(r.id)) };
+    });
+  }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -72,14 +101,23 @@ export default function UsersClient({ isAdmin }: { isAdmin: boolean }) {
     const formData = new FormData(e.target as HTMLFormElement);
     const name = formData.get("name") as string;
     const email = formData.get("email") as string;
-    const role = formData.get("role") as string;
     const age = Number(formData.get("age"));
     const password = formData.get("password") as string;
     const image = formData.get("image") as string;
+    const phone = formData.get("phone") as string;
     const res = await fetch("/api/users", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: editingUser.id, name, email, role, age, password, image }),
+      body: JSON.stringify({
+        id: editingUser.id,
+        name,
+        email,
+        age,
+        password: password || undefined,
+        image,
+        phone: phone || undefined,
+        roleIds: editingUser.roles.map((r) => r.id),
+      }),
     });
     const json = await res.json();
     if (json.code === 0) {
@@ -100,6 +138,29 @@ export default function UsersClient({ isAdmin }: { isAdmin: boolean }) {
       fetchUsers();
     }
   }
+
+  const roleCheckboxes = (selectedIds: number[], onToggle: (id: number) => void) => (
+    <div className="flex max-h-48 flex-col gap-1 overflow-y-auto rounded-lg border border-zinc-300 bg-white p-2 dark:border-zinc-700 dark:bg-zinc-900">
+      {allRoles.length === 0 && (
+        <p className="p-2 text-xs text-zinc-400">加载中...</p>
+      )}
+      {allRoles.map((role) => (
+        <label
+          key={role.id}
+          className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800"
+        >
+          <input
+            type="checkbox"
+            checked={selectedIds.includes(role.id)}
+            onChange={() => onToggle(role.id)}
+            className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-600"
+          />
+          <span className="text-black dark:text-zinc-50">{role.roleName}</span>
+          <span className="text-xs text-zinc-400">({role.roleCode})</span>
+        </label>
+      ))}
+    </div>
+  );
 
   return (
     <div>
@@ -125,7 +186,7 @@ export default function UsersClient({ isAdmin }: { isAdmin: boolean }) {
             <tr>
               <th className="px-4 py-3 font-medium text-zinc-600 dark:text-zinc-400">Name</th>
               <th className="px-4 py-3 font-medium text-zinc-600 dark:text-zinc-400">Email</th>
-              <th className="px-4 py-3 font-medium text-zinc-600 dark:text-zinc-400">Role</th>
+              <th className="px-4 py-3 font-medium text-zinc-600 dark:text-zinc-400">Roles</th>
               <th className="px-4 py-3 font-medium text-zinc-600 dark:text-zinc-400">Age</th>
               <th className="px-4 py-3 font-medium text-zinc-600 dark:text-zinc-400">Actions</th>
             </tr>
@@ -136,9 +197,19 @@ export default function UsersClient({ isAdmin }: { isAdmin: boolean }) {
                 <td className="px-4 py-3 text-black dark:text-zinc-50">{user.name}</td>
                 <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{user.email}</td>
                 <td className="px-4 py-3">
-                  <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
-                    {user.role}
-                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {user.roles.map((role) => (
+                      <span
+                        key={role.id}
+                        className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+                      >
+                        {role.roleName}
+                      </span>
+                    ))}
+                    {user.roles.length === 0 && (
+                      <span className="text-xs text-zinc-400">-</span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{user.age}</td>
                 <td className="flex gap-2 px-4 py-3">
@@ -148,7 +219,7 @@ export default function UsersClient({ isAdmin }: { isAdmin: boolean }) {
                   >
                     Edit
                   </button>
-                  {isAdmin && (
+                  {canDelete && (
                     <button
                       onClick={() => setDeletingUser(user)}
                       className="rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700"
@@ -202,23 +273,19 @@ export default function UsersClient({ isAdmin }: { isAdmin: boolean }) {
                   />
                 </fieldset>
                 <fieldset className="flex flex-col gap-1">
-                  <label className="text-xs text-zinc-500">Role</label>
-                  <select
-                    value={form.role}
-                    onChange={(e) => setForm({ ...form, role: e.target.value as User["role"] })}
-                    className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-black outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-                  >
-                    {ROLE_OPTIONS.map((r) => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </select>
-                </fieldset>
-                <fieldset className="flex flex-col gap-1">
                   <label className="text-xs text-zinc-500">Age</label>
                   <input
                     type="number"
                     value={form.age}
                     onChange={(e) => setForm({ ...form, age: Number(e.target.value) })}
+                    className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-black outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                  />
+                </fieldset>
+                <fieldset className="flex flex-col gap-1">
+                  <label className="text-xs text-zinc-500">Phone</label>
+                  <input
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
                     className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-black outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
                   />
                 </fieldset>
@@ -230,6 +297,11 @@ export default function UsersClient({ isAdmin }: { isAdmin: boolean }) {
                     placeholder="选填"
                     className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-black outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
                   />
+                </fieldset>
+                {/* Role checkboxes */}
+                <fieldset className="col-span-2 flex flex-col gap-1">
+                  <label className="text-xs text-zinc-500">Roles</label>
+                  {roleCheckboxes(form.roleIds, toggleRole)}
                 </fieldset>
               </div>
               <div className="mt-2 flex justify-end gap-3">
@@ -290,23 +362,19 @@ export default function UsersClient({ isAdmin }: { isAdmin: boolean }) {
                   />
                 </fieldset>
                 <fieldset className="flex flex-col gap-1">
-                  <label className="text-xs text-zinc-500">Role</label>
-                  <select
-                    name="role"
-                    defaultValue={editingUser.role}
-                    className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-black outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-                  >
-                    {ROLE_OPTIONS.map((r) => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </select>
-                </fieldset>
-                <fieldset className="flex flex-col gap-1">
                   <label className="text-xs text-zinc-500">Age</label>
                   <input
                     name="age"
                     type="number"
                     defaultValue={editingUser.age}
+                    className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-black outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+                  />
+                </fieldset>
+                <fieldset className="flex flex-col gap-1">
+                  <label className="text-xs text-zinc-500">Phone</label>
+                  <input
+                    name="phone"
+                    defaultValue={editingUser.phone ?? ""}
                     className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-black outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
                   />
                 </fieldset>
@@ -317,6 +385,14 @@ export default function UsersClient({ isAdmin }: { isAdmin: boolean }) {
                     placeholder="选填"
                     className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-black outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
                   />
+                </fieldset>
+                {/* Role checkboxes */}
+                <fieldset className="col-span-2 flex flex-col gap-1">
+                  <label className="text-xs text-zinc-500">Roles</label>
+                  {roleCheckboxes(
+                    editingUser.roles.map((r) => r.id),
+                    toggleEditRole,
+                  )}
                 </fieldset>
               </div>
               <div className="mt-2 flex justify-end gap-3">

@@ -19,6 +19,7 @@ export default async function UsersPage() {
   }
 
   const user = await getCurrentUser();
+  const canDeleteUser = user?.roleCodes.some((r) => ["admin", "super_admin"].includes(r)) ?? false;
 
-  return <UsersClient isAdmin={user?.role === "admin"} />;
+  return <UsersClient canDelete={canDeleteUser} />;
 }

@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE `users` ADD COLUMN `phone` VARCHAR(32) NULL,
+    ADD COLUMN `status` INTEGER NOT NULL DEFAULT 1;
+
