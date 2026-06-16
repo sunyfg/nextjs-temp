@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface Role {
   id: number;
@@ -9,6 +9,24 @@ interface Role {
   description: string | null;
   status: number;
   sortOrder: number;
+}
+
+interface SysPermission {
+  id: number;
+  parentId: number;
+  permissionName: string;
+  permissionCode: string | null;
+  type: string;
+  path: string | null;
+  component: string | null;
+  icon: string | null;
+  visible: number;
+  status: number;
+  sortOrder: number;
+}
+
+interface TreeNode extends SysPermission {
+  children: TreeNode[];
 }
 
 const emptyForm = {
@@ -21,12 +39,132 @@ const emptyForm = {
 
 type FormFields = typeof emptyForm;
 
+/* ---------- Tree helpers ---------- */
+
+function buildTree(perms: SysPermission[]): TreeNode[] {
+  const map = new Map<number, TreeNode>();
+  const roots: TreeNode[] = [];
+  for (const p of perms) {
+    map.set(p.id, { ...p, children: [] });
+  }
+  for (const p of perms) {
+    const node = map.get(p.id)!;
+    if (p.parentId === 0) {
+      roots.push(node);
+    } else {
+      const parent = map.get(p.parentId);
+      if (parent) parent.children.push(node);
+      else roots.push(node); // orphan → root
+    }
+  }
+  return roots;
+}
+
+function getAllDescendantIds(perms: SysPermission[], parentId: number): number[] {
+  const ids: number[] = [];
+  for (const p of perms) {
+    if (p.parentId === parentId) {
+      ids.push(p.id);
+      ids.push(...getAllDescendantIds(perms, p.id));
+    }
+  }
+  return ids;
+}
+
+function getAncestorIds(perms: SysPermission[], childId: number): number[] {
+  const ids: number[] = [];
+  let current = perms.find((p) => p.id === childId);
+  while (current && current.parentId !== 0) {
+    const parent = perms.find((p) => p.id === current!.parentId);
+    if (parent) {
+      ids.push(parent.id);
+      current = parent;
+    } else {
+      break;
+    }
+  }
+  return ids;
+}
+
+/* ---------- Tree checkbox node ---------- */
+
+function TreeNodeRow({
+  node,
+  depth,
+  selectedIds,
+  allPermissions,
+  onToggle,
+}: {
+  node: TreeNode;
+  depth: number;
+  selectedIds: Set<number>;
+  allPermissions: SysPermission[];
+  onToggle: (id: number, checked: boolean) => void;
+}) {
+  const childIds = useMemo(() => getAllDescendantIds(allPermissions, node.id), [allPermissions, node.id]);
+  const descendantIds = useMemo(() => [node.id, ...childIds], [node.id, childIds]);
+
+  const checkedCount = descendantIds.filter((id) => selectedIds.has(id)).length;
+  const isChecked = checkedCount === descendantIds.length;
+  const isIndeterminate = checkedCount > 0 && !isChecked;
+
+  const handleChange = () => {
+    onToggle(node.id, !isChecked);
+  };
+
+  return (
+    <div className="select-none">
+      <label
+        className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
+        style={{ paddingLeft: `${depth * 20 + 8}px` }}
+      >
+        <input
+          type="checkbox"
+          checked={isChecked}
+          ref={(el) => {
+            if (el) el.indeterminate = isIndeterminate && !isChecked;
+          }}
+          onChange={handleChange}
+          className="h-4 w-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-500 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100"
+        />
+        <span className="text-black dark:text-zinc-50">{node.permissionName}</span>
+        <span className="ml-1 text-xs text-zinc-400">
+          {node.permissionCode ?? node.type}
+        </span>
+      </label>
+      {node.children.length > 0 && (
+        <div>
+          {node.children.map((child) => (
+            <TreeNodeRow
+              key={child.id}
+              node={child}
+              depth={depth + 1}
+              selectedIds={selectedIds}
+              allPermissions={allPermissions}
+              onToggle={onToggle}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------- Main component ---------- */
+
 export default function RolesClient() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [form, setForm] = useState<FormFields>(emptyForm);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [deletingRole, setDeletingRole] = useState<Role | null>(null);
+
+  // Permission config modal state
+  const [permModalRole, setPermModalRole] = useState<Role | null>(null);
+  const [allPermissions, setAllPermissions] = useState<SysPermission[]>([]);
+  const [selectedPermIds, setSelectedPermIds] = useState<Set<number>>(new Set());
+  const [permModalLoading, setPermModalLoading] = useState(false);
+  const [permModalSaving, setPermModalSaving] = useState(false);
 
   const fetchRoles = useCallback(async () => {
     const res = await fetch("/api/roles");
@@ -36,7 +174,15 @@ export default function RolesClient() {
 
   useEffect(() => {
     fetchRoles();
+    // Preload all permissions for TreeSelect
+    fetch("/api/permissions")
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.code === 0) setAllPermissions(json.data);
+      });
   }, [fetchRoles]);
+
+  const permTree = useMemo(() => buildTree(allPermissions), [allPermissions]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -104,6 +250,67 @@ export default function RolesClient() {
     }
   }
 
+  /* ---------- Permission config handlers ---------- */
+
+  async function openPermConfig(role: Role) {
+    setPermModalRole(role);
+    setPermModalLoading(true);
+    try {
+      const res = await fetch(`/api/roles/${role.id}/permissions`);
+      const json = await res.json();
+      if (json.code === 0) {
+        setSelectedPermIds(new Set(json.data.permissionIds));
+      } else {
+        alert(json.message);
+      }
+    } catch {
+      alert("加载权限配置失败");
+    } finally {
+      setPermModalLoading(false);
+    }
+  }
+
+  function handlePermToggle(toggledId: number, checked: boolean) {
+    setSelectedPermIds((prev) => {
+      const next = new Set(prev);
+      const affected = [
+        toggledId,
+        ...getAllDescendantIds(allPermissions, toggledId),
+      ];
+      if (checked) {
+        // Select: add node + all descendants + ancestors
+        const ancestors = getAncestorIds(allPermissions, toggledId);
+        for (const id of [...affected, ...ancestors]) next.add(id);
+      } else {
+        // Unselect: remove node + all descendants
+        for (const id of affected) next.delete(id);
+      }
+      return next;
+    });
+  }
+
+  async function savePermConfig() {
+    if (!permModalRole) return;
+    setPermModalSaving(true);
+    try {
+      const res = await fetch(`/api/roles/${permModalRole.id}/permissions`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ permissionIds: Array.from(selectedPermIds) }),
+      });
+      const json = await res.json();
+      if (json.code === 0) {
+        setPermModalRole(null);
+      } else {
+        alert(json.message);
+      }
+    } catch {
+      alert("保存权限配置失败");
+    } finally {
+      setPermModalSaving(false);
+    }
+  }
+
   return (
     <div>
       <h1 className="text-2xl font-semibold tracking-tight text-black dark:text-zinc-50">
@@ -153,6 +360,12 @@ export default function RolesClient() {
                 </td>
                 <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{role.sortOrder}</td>
                 <td className="flex gap-2 px-4 py-3">
+                  <button
+                    onClick={() => openPermConfig(role)}
+                    className="rounded bg-emerald-600 px-3 py-1 text-xs font-medium text-white hover:bg-emerald-700"
+                  >
+                    权限
+                  </button>
                   <button
                     onClick={() => startEdit(role)}
                     className="rounded bg-zinc-800 px-3 py-1 text-xs font-medium text-white hover:bg-zinc-700 dark:bg-zinc-200 dark:text-black dark:hover:bg-zinc-300"
@@ -347,6 +560,61 @@ export default function RolesClient() {
                 className="rounded-lg bg-red-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-red-700"
               >
                 删除
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Permission config modal */}
+      {permModalRole && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="flex max-h-[80vh] w-full max-w-lg flex-col rounded-xl border border-zinc-200 bg-white p-6 shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+            <h3 className="text-lg font-semibold text-black dark:text-zinc-50">
+              配置权限 — {permModalRole.roleName}
+            </h3>
+            <p className="mt-1 text-xs text-zinc-500">
+              勾选需要分配给该角色的权限项
+            </p>
+
+            {/* Tree area */}
+            <div className="mt-4 flex-1 overflow-y-auto rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-800/50">
+              {permModalLoading ? (
+                <p className="py-8 text-center text-sm text-zinc-400">加载中...</p>
+              ) : permTree.length === 0 ? (
+                <p className="py-8 text-center text-sm text-zinc-400">暂无权限数据</p>
+              ) : (
+                permTree.map((node) => (
+                  <TreeNodeRow
+                    key={node.id}
+                    node={node}
+                    depth={0}
+                    selectedIds={selectedPermIds}
+                    allPermissions={allPermissions}
+                    onToggle={handlePermToggle}
+                  />
+                ))
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="mt-4 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => {
+                  setPermModalRole(null);
+                  setSelectedPermIds(new Set());
+                }}
+                className="rounded-lg border border-zinc-300 bg-white px-4 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+              >
+                取消
+              </button>
+              <button
+                onClick={savePermConfig}
+                disabled={permModalSaving}
+                className="rounded-lg bg-emerald-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
+              >
+                {permModalSaving ? "保存中..." : "保存权限"}
               </button>
             </div>
           </div>
