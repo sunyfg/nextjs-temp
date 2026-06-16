@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { FullPageSkeleton } from "../table-skeleton";
 
 interface Permission {
   id: number;
@@ -72,6 +73,7 @@ function buildTree(list: Permission[]): (Permission & { depth: number })[] {
 }
 
 export default function PermissionsClient() {
+  const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<Permission[]>([]);
   const [form, setForm] = useState<FormFields>(emptyForm);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -82,6 +84,7 @@ export default function PermissionsClient() {
     const res = await fetch("/api/permissions");
     const json = await res.json();
     if (json.code === 0) setItems(json.data);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -183,6 +186,10 @@ export default function PermissionsClient() {
       </select>
     );
   };
+
+  if (loading) {
+    return <FullPageSkeleton withToolbar={false} />;
+  }
 
   return (
     <div>

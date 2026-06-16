@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { FullPageSkeleton } from "../table-skeleton";
 
 interface Role {
   id: number;
@@ -37,11 +38,25 @@ export default function UsersClient({ canDelete }: { canDelete: boolean }) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [searchName, setSearchName] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const debounceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  const fetchUsers = useCallback(async () => {
-    const res = await fetch("/api/users");
+  useEffect(() => {
+    clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      setDebouncedSearch(searchName);
+    }, 300);
+    return () => clearTimeout(debounceTimer.current);
+  }, [searchName]);
+
+  const fetchUsers = useCallback(async (name?: string) => {
+    const params = name ? `?name=${encodeURIComponent(name)}` : "";
+    const res = await fetch(`/api/users${params}`);
     const json = await res.json();
     if (json.code === 0) setUsers(json.data);
+    setLoading(false);
   }, []);
 
   const fetchRoles = useCallback(async () => {
@@ -50,10 +65,15 @@ export default function UsersClient({ canDelete }: { canDelete: boolean }) {
     if (json.code === 0) setAllRoles(json.data);
   }, []);
 
+  // Roles only need to be fetched once (for the create/edit modal role checkboxes)
   useEffect(() => {
-    fetchUsers();
     fetchRoles();
-  }, [fetchUsers, fetchRoles]);
+  }, [fetchRoles]);
+
+  // Users re-fetch when debounced search query changes
+  useEffect(() => {
+    fetchUsers(debouncedSearch);
+  }, [fetchUsers, debouncedSearch]);
 
   function toggleRole(roleId: number) {
     setForm((prev) => ({
@@ -162,6 +182,10 @@ export default function UsersClient({ canDelete }: { canDelete: boolean }) {
     </div>
   );
 
+  if (loading) {
+    return <FullPageSkeleton withToolbar />;
+  }
+
   return (
     <div>
       <h1 className="text-2xl font-semibold tracking-tight text-black dark:text-zinc-50">
@@ -171,13 +195,33 @@ export default function UsersClient({ canDelete }: { canDelete: boolean }) {
         Manage user accounts and permissions.
       </p>
 
-      {/* Create button */}
-      <button
-        onClick={() => setShowCreateModal(true)}
-        className="mt-6 rounded-lg bg-black px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-      >
-        + Add User
-      </button>
+      {/* Toolbar: search + create */}
+      <div className="mt-6 flex items-center justify-between gap-4">
+        <div className="relative flex-1 max-w-xs">
+          <input
+            type="text"
+            value={searchName}
+            onChange={(e) => setSearchName(e.target.value)}
+            placeholder="搜索姓名..."
+            className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-1.5 pl-9 text-sm text-black outline-none transition-colors focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+          />
+          <svg
+            className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
+          </svg>
+        </div>
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="shrink-0 rounded-lg bg-black px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+        >
+          + Add User
+        </button>
+      </div>
 
       {/* Users table */}
       <div className="mt-6 overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800">

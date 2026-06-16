@@ -2,8 +2,14 @@ import bcrypt from "bcryptjs";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const name = searchParams.get("name")?.trim() || "";
+
   const users = await prisma.user.findMany({
+    where: name
+      ? { name: { contains: name } }
+      : undefined,
     include: {
       userRoles: {
         include: { role: true },

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { FullPageSkeleton } from "../table-skeleton";
 
 interface Role {
   id: number;
@@ -153,6 +154,7 @@ function TreeNodeRow({
 /* ---------- Main component ---------- */
 
 export default function RolesClient() {
+  const [loading, setLoading] = useState(true);
   const [roles, setRoles] = useState<Role[]>([]);
   const [form, setForm] = useState<FormFields>(emptyForm);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -170,6 +172,7 @@ export default function RolesClient() {
     const res = await fetch("/api/roles");
     const json = await res.json();
     if (json.code === 0) setRoles(json.data);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -309,6 +312,10 @@ export default function RolesClient() {
     } finally {
       setPermModalSaving(false);
     }
+  }
+
+  if (loading) {
+    return <FullPageSkeleton withToolbar={false} />;
   }
 
   return (
