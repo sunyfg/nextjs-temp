@@ -44,10 +44,43 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     GitHub,
   ],
   callbacks: {
-    jwt({ token, user }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         token.appEnv = process.env.APP_ENV || "local";
+
+        // Fetch roleCodes and permissionCodes on sign-in
+        const roles = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: {
+            userRoles: {
+              select: { role: { select: { id: true, roleCode: true } } },
+            },
+          },
+        });
+        const roleCodes = roles?.userRoles.map((ur) => ur.role.roleCode) ?? [];
+        token.roleCodes = roleCodes;
+
+        const isSuperAdmin = roleCodes.includes("super_admin");
+        if (isSuperAdmin) {
+          const allPerms = await prisma.sysPermission.findMany({
+            where: { permissionCode: { not: null } },
+            select: { permissionCode: true },
+          });
+          token.permissionCodes = allPerms.map((p) => p.permissionCode!);
+        } else {
+          const roleIds = roles?.userRoles.map((ur) => ur.role.id) ?? [];
+          const rolePerms = await prisma.sysRolePermission.findMany({
+            where: { roleId: { in: roleIds } },
+            select: { permissionId: true },
+          });
+          const permIds = rolePerms.map((rp) => rp.permissionId);
+          const perms = await prisma.sysPermission.findMany({
+            where: { id: { in: permIds }, permissionCode: { not: null } },
+            select: { permissionCode: true },
+          });
+          token.permissionCodes = perms.map((p) => p.permissionCode!);
+        }
       }
       return token;
     },
@@ -55,6 +88,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user) {
         session.user.id = token.id as string;
         session.user.appEnv = token.appEnv as string;
+        session.user.roleCodes = (token as any).roleCodes ?? [];
+        session.user.permissionCodes = (token as any).permissionCodes ?? [];
       }
       return session;
     },

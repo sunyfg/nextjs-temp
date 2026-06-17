@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePermission } from "@/hooks/usePermission";
 import { FullPageSkeleton } from "../table-skeleton";
 
 interface Role {
@@ -31,14 +32,15 @@ const emptyForm = {
 
 type FormFields = typeof emptyForm;
 
-export default function UsersClient({ canDelete }: { canDelete: boolean }) {
+export default function UsersClient() {
+  const { hasPermission } = usePermission();
+  const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<User[]>([]);
   const [allRoles, setAllRoles] = useState<Role[]>([]);
   const [form, setForm] = useState<FormFields>(emptyForm);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deletingUser, setDeletingUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
   const [searchName, setSearchName] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -215,12 +217,14 @@ export default function UsersClient({ canDelete }: { canDelete: boolean }) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
           </svg>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="shrink-0 rounded-lg bg-black px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-        >
-          + Add User
-        </button>
+        {hasPermission("system:user:create") && (
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="shrink-0 rounded-lg bg-black px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+          >
+            + Add User
+          </button>
+        )}
       </div>
 
       {/* Users table */}
@@ -257,13 +261,15 @@ export default function UsersClient({ canDelete }: { canDelete: boolean }) {
                 </td>
                 <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{user.age}</td>
                 <td className="flex gap-2 px-4 py-3">
-                  <button
-                    onClick={() => startEdit(user)}
-                    className="rounded bg-zinc-800 px-3 py-1 text-xs font-medium text-white hover:bg-zinc-700 dark:bg-zinc-200 dark:text-black dark:hover:bg-zinc-300"
-                  >
-                    Edit
-                  </button>
-                  {canDelete && (
+                  {hasPermission("system:user:update") && (
+                    <button
+                      onClick={() => startEdit(user)}
+                      className="rounded bg-zinc-800 px-3 py-1 text-xs font-medium text-white hover:bg-zinc-700 dark:bg-zinc-200 dark:text-black dark:hover:bg-zinc-300"
+                    >
+                      Edit
+                    </button>
+                  )}
+                  {hasPermission("system:user:delete") && (
                     <button
                       onClick={() => setDeletingUser(user)}
                       className="rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700"

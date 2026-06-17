@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePermission } from "@/hooks/usePermission";
 import { FullPageSkeleton } from "../table-skeleton";
 
 interface Role {
@@ -154,6 +155,7 @@ function TreeNodeRow({
 /* ---------- Main component ---------- */
 
 export default function RolesClient() {
+  const { hasPermission } = usePermission();
   const [loading, setLoading] = useState(true);
   const [roles, setRoles] = useState<Role[]>([]);
   const [form, setForm] = useState<FormFields>(emptyForm);
@@ -327,13 +329,14 @@ export default function RolesClient() {
         管理系统角色和权限分配
       </p>
 
-      {/* Create button */}
-      <button
-        onClick={() => setShowCreateModal(true)}
-        className="mt-6 rounded-lg bg-black px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-      >
-        + 新增角色
-      </button>
+      {hasPermission("system:role:create") && (
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="mt-6 rounded-lg bg-black px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+        >
+          + 新增角色
+        </button>
+      )}
 
       {/* Roles table */}
       <div className="mt-6 overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800">
@@ -367,24 +370,30 @@ export default function RolesClient() {
                 </td>
                 <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{role.sortOrder}</td>
                 <td className="flex gap-2 px-4 py-3">
-                  <button
-                    onClick={() => openPermConfig(role)}
-                    className="rounded bg-emerald-600 px-3 py-1 text-xs font-medium text-white hover:bg-emerald-700"
-                  >
-                    权限
-                  </button>
-                  <button
-                    onClick={() => startEdit(role)}
-                    className="rounded bg-zinc-800 px-3 py-1 text-xs font-medium text-white hover:bg-zinc-700 dark:bg-zinc-200 dark:text-black dark:hover:bg-zinc-300"
-                  >
-                    编辑
-                  </button>
-                  <button
-                    onClick={() => setDeletingRole(role)}
-                    className="rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700"
-                  >
-                    删除
-                  </button>
+                  {hasPermission("system:role:update") && (
+                    <button
+                      onClick={() => openPermConfig(role)}
+                      className="rounded bg-emerald-600 px-3 py-1 text-xs font-medium text-white hover:bg-emerald-700"
+                    >
+                      权限
+                    </button>
+                  )}
+                  {hasPermission("system:role:update") && (
+                    <button
+                      onClick={() => startEdit(role)}
+                      className="rounded bg-zinc-800 px-3 py-1 text-xs font-medium text-white hover:bg-zinc-700 dark:bg-zinc-200 dark:text-black dark:hover:bg-zinc-300"
+                    >
+                      编辑
+                    </button>
+                  )}
+                  {hasPermission("system:role:delete") && (
+                    <button
+                      onClick={() => setDeletingRole(role)}
+                      className="rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700"
+                    >
+                      删除
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}

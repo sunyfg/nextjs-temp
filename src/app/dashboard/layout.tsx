@@ -1,7 +1,55 @@
-import { getCurrentUser, MANAGE_USERS_ROLES, MANAGE_ROLES_ROLES, MANAGE_PERMISSIONS_ROLES } from "@/lib/auth-utils";
-import SidebarNav from "./sidebar-nav";
-import type { NavItem } from "./sidebar-nav";
-import UserMenu from "./user-menu";
+import { getCurrentUser } from '@/lib/auth-utils';
+import { prisma } from '@/lib/prisma';
+import SidebarNav from './sidebar-nav';
+import type { NavItem } from './sidebar-nav';
+import UserMenu from './user-menu';
+
+type PermRow = {
+  id: number;
+  parentId: number;
+  permissionName: string;
+  permissionCode: string | null;
+  type: string;
+  path: string | null;
+  sortOrder: number;
+};
+
+function buildMenuTree(perms: PermRow[]) {
+  const map = new Map<number, PermRow & { children: PermRow[] }>();
+  const roots: (PermRow & { children: PermRow[] })[] = [];
+
+  for (const p of perms) {
+    map.set(p.id, { ...p, children: [] });
+  }
+  for (const p of perms) {
+    const node = map.get(p.id)!;
+    if (p.parentId === 0 || !map.has(p.parentId)) {
+      roots.push(node);
+    } else {
+      map.get(p.parentId)!.children.push(node);
+    }
+  }
+  return roots;
+}
+
+function toNavItems(nodes: (PermRow & { children: PermRow[] })[]): NavItem[] {
+  const items: NavItem[] = [];
+  for (const node of nodes) {
+    if (node.children.length > 0) {
+      const children = node.children
+        .filter((c) => c.type === 'MENU' && c.path)
+        .map((c) => ({ href: c.path!, label: c.permissionName }));
+      if (children.length > 0) {
+        items.push({ label: node.permissionName, children });
+      } else if (node.path) {
+        items.push({ href: node.path, label: node.permissionName });
+      }
+    } else if (node.path) {
+      items.push({ href: node.path, label: node.permissionName });
+    }
+  }
+  return items;
+}
 
 export default async function DashboardLayout({
   children,
@@ -10,39 +58,54 @@ export default async function DashboardLayout({
 }) {
   const user = await getCurrentUser();
   const roleCodes = user?.roleCodes ?? [];
-  const isSuperAdmin = roleCodes.includes("super_admin");
-  const canManageUsers = isSuperAdmin || roleCodes.some((r) => (MANAGE_USERS_ROLES as readonly string[]).includes(r));
-  const canManageRoles = isSuperAdmin || roleCodes.some((r) => (MANAGE_ROLES_ROLES as readonly string[]).includes(r));
-  const canManagePermissions = isSuperAdmin || roleCodes.some((r) => (MANAGE_PERMISSIONS_ROLES as readonly string[]).includes(r));
+  console.log('🚀 ~ DashboardLayout ~ roleCodes:', roleCodes);
+  const isSuperAdmin = roleCodes.includes('super_admin');
 
-  const navItems: NavItem[] = [
-    { href: "/dashboard", label: "数据分析" },
-    ...((canManageUsers || canManageRoles || canManagePermissions)
-      ? [
-          {
-            label: "系统管理",
-            children: [
-              ...(canManageUsers ? [{ href: "/dashboard/users", label: "用户管理" }] : []),
-              ...(canManageRoles ? [{ href: "/dashboard/roles", label: "角色管理" }] : []),
-              ...(canManagePermissions ? [{ href: "/dashboard/permissions", label: "权限管理" }] : []),
-            ],
-          },
-        ]
-      : []),
-    { href: "/dashboard/settings", label: "系统设置" },
-  ];
+  // Fetch permissions the user has access to
+  let menuPerms: PermRow[];
+
+  if (isSuperAdmin) {
+    menuPerms = await prisma.sysPermission.findMany({
+      where: { type: { in: ['CATALOG', 'MENU'] } },
+      orderBy: [{ parentId: 'asc' }, { sortOrder: 'asc' }],
+    });
+  } else if (user) {
+    const userRecord = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: {
+        userRoles: {
+          select: { role: { select: { id: true } } },
+        },
+      },
+    });
+    const roleIds = userRecord?.userRoles.map((ur) => ur.role.id) ?? [];
+    const rolePerms = await prisma.sysRolePermission.findMany({
+      where: { roleId: { in: roleIds } },
+      select: { permissionId: true },
+    });
+    const permIds = rolePerms.map((rp) => rp.permissionId);
+    menuPerms = await prisma.sysPermission.findMany({
+      where: { id: { in: permIds }, type: { in: ['CATALOG', 'MENU'] } },
+      orderBy: [{ parentId: 'asc' }, { sortOrder: 'asc' }],
+    });
+  } else {
+    menuPerms = [];
+  }
+
+  const tree = buildMenuTree(menuPerms);
+  const navItems: NavItem[] = toNavItems(tree);
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <aside className="flex w-56 shrink-0 flex-col border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black">
+    <div className='flex h-screen overflow-hidden'>
+      <aside className='flex w-56 shrink-0 flex-col border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-black'>
         <SidebarNav items={navItems} />
         {user && (
-          <div className="mt-auto border-t border-zinc-200 p-3 dark:border-zinc-800">
+          <div className='mt-auto border-t border-zinc-200 p-3 dark:border-zinc-800'>
             <UserMenu user={user} />
           </div>
         )}
       </aside>
-      <main className="flex-1 overflow-y-auto p-8">{children}</main>
+      <main className='flex-1 overflow-y-auto p-8'>{children}</main>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePermission } from "@/hooks/usePermission";
 import { FullPageSkeleton } from "../table-skeleton";
 
 interface Permission {
@@ -73,6 +74,7 @@ function buildTree(list: Permission[]): (Permission & { depth: number })[] {
 }
 
 export default function PermissionsClient() {
+  const { hasPermission } = usePermission();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<Permission[]>([]);
   const [form, setForm] = useState<FormFields>(emptyForm);
@@ -200,12 +202,14 @@ export default function PermissionsClient() {
         管理系统权限项，支持树形层级结构
       </p>
 
-      <button
-        onClick={() => setShowCreateModal(true)}
-        className="mt-6 rounded-lg bg-black px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
-      >
-        + 新增权限
-      </button>
+      {hasPermission("system:permissions:create") && (
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="mt-6 rounded-lg bg-black px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+        >
+          + 新增权限
+        </button>
+      )}
 
       <div className="mt-6 overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800">
         <table className="w-full text-left text-sm">
@@ -261,18 +265,22 @@ export default function PermissionsClient() {
                 </td>
                 <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{item.sortOrder}</td>
                 <td className="flex gap-2 px-4 py-3">
-                  <button
-                    onClick={() => startEdit(item)}
-                    className="rounded bg-zinc-800 px-3 py-1 text-xs font-medium text-white hover:bg-zinc-700 dark:bg-zinc-200 dark:text-black dark:hover:bg-zinc-300"
-                  >
-                    编辑
-                  </button>
-                  <button
-                    onClick={() => setDeletingItem(item)}
-                    className="rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700"
-                  >
-                    删除
-                  </button>
+                  {hasPermission("system:permissions:update") && (
+                    <button
+                      onClick={() => startEdit(item)}
+                      className="rounded bg-zinc-800 px-3 py-1 text-xs font-medium text-white hover:bg-zinc-700 dark:bg-zinc-200 dark:text-black dark:hover:bg-zinc-300"
+                    >
+                      编辑
+                    </button>
+                  )}
+                  {hasPermission("system:permissions:delete") && (
+                    <button
+                      onClick={() => setDeletingItem(item)}
+                      className="rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700"
+                    >
+                      删除
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
