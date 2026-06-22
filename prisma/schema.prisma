@@ -67,14 +67,6 @@ model VerificationToken {
   @@map("verification_tokens")
 }
 
-model Post {
-  id      Int    @id @default(autoincrement())
-  title   String
-  content String
-
-  @@map("posts")
-}
-
 model SysRole {
   id               Int                @id @default(autoincrement())
   roleCode         String             @unique @map("role_code")
@@ -131,4 +123,112 @@ model SysRolePermission {
 
   @@unique([roleId, permissionId])
   @@map("sys_role_permission")
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+
+  @@map("post_status")
+}
+
+model BlogUser {
+  id             Int      @id @default(autoincrement())
+  username       String   @unique
+  displayName    String?  @map("display_name")
+  email          String?  @unique
+  avatar         String?
+  hashedPassword String?  @map("hashed_password")
+  bio            String?  @db.VarChar(500)
+  isSuperAdmin   Int      @default(0) @map("is_super_admin")
+  status         Int      @default(1)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  posts          Post[]
+
+  @@map("blog_user")
+}
+
+model Category {
+  id          Int      @id @default(autoincrement())
+  name        String
+  slug        String   @unique
+  description String?
+  sort        Int      @default(0)
+  visible     Boolean  @default(true)
+
+  posts       Post[]
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("blog_categories")
+}
+
+model Tag {
+  id        Int       @id @default(autoincrement())
+  name      String
+  slug      String    @unique
+
+  posts     PostTag[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@map("blog_tags")
+}
+
+model Post {
+  id             Int        @id @default(autoincrement())
+  title          String
+  slug           String     @unique
+  summary        String?    @db.VarChar(500)
+  coverImage     String?    @map("cover_image")
+
+  content        String     @db.LongText
+  contentText    String?    @db.Text @map("content_text")
+
+  status         PostStatus @default(DRAFT)
+  isTop          Boolean    @default(false) @map("is_top")
+  isRecommend    Boolean    @default(false) @map("is_recommend")
+
+  viewCount      Int        @default(0) @map("view_count")
+
+  seoTitle       String?    @map("seo_title")
+  seoKeywords    String?    @map("seo_keywords")
+  seoDescription String?    @db.VarChar(500) @map("seo_description")
+
+  publishedAt    DateTime?  @map("published_at")
+
+  authorId       Int        @map("author_id")
+  author         BlogUser   @relation(fields: [authorId], references: [id])
+
+  categoryId     Int?       @map("category_id")
+  category       Category?  @relation(fields: [categoryId], references: [id])
+
+  tags           PostTag[]
+
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+  deletedAt      DateTime?  @map("deleted_at")
+
+  @@index([status])
+  @@index([categoryId])
+  @@index([authorId])
+  @@index([publishedAt])
+  @@map("blog_posts")
+}
+
+model PostTag {
+  postId    Int      @map("post_id")
+  tagId     Int      @map("tag_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@map("blog_post_tags")
 }
