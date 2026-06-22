@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import BlogsClient from "./blogs-client";
+import BlogsClient from "../blogs-client";
 
 export const metadata = {
   title: "博客管理",

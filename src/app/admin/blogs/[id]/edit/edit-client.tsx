@@ -137,7 +137,7 @@ export default function EditClient({ initialData, isNew, categories, tags }: Edi
       const json = await res.json();
       if (json.code === 0) {
         setSaved(true);
-        router.push("/admin/blogs");
+        router.push("/admin/blogs/list");
       } else {
         setError(json.message || "保存失败");
       }
@@ -166,7 +166,7 @@ export default function EditClient({ initialData, isNew, categories, tags }: Edi
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => router.push("/admin/blogs")}
+            onClick={() => router.push("/admin/blogs/list")}
             className="rounded-lg border border-zinc-300 bg-white px-4 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
           >
             取消
