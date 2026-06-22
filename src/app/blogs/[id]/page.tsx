@@ -145,7 +145,7 @@ export default async function BlogPost({ params }: Props) {
 
         {/* Content */}
         <div
-          className="mt-8 prose prose-zinc dark:prose-invert max-w-none"
+          className="tiptap-content mt-8 prose prose-zinc dark:prose-invert max-w-none"
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
 

@@ -26,20 +26,23 @@ body {
 }
 
 /* ─── Tiptap Editor ──────────────────────────────── */
-.tiptap.ProseMirror {
+.tiptap.ProseMirror,
+.tiptap-content {
   min-height: 400px;
   padding: 0.75rem 1rem;
   outline: none;
   line-height: 1.75;
 }
 
-.tiptap.ProseMirror > * + * {
+.tiptap.ProseMirror > * + *,
+.tiptap-content > * + * {
   margin-top: 0.75em;
 }
 
 /* Placeholder */
-.tiptap.ProseMirror p.is-editor-empty:first-child::before {
-  color: theme(colors.zinc.400);
+.tiptap.ProseMirror p.is-editor-empty:first-child::before,
+.tiptap-content p.is-editor-empty:first-child::before {
+  color: var(--color-zinc-400);
   content: attr(data-placeholder);
   float: left;
   height: 0;
@@ -47,62 +50,73 @@ body {
 }
 
 /* Headings */
-.tiptap.ProseMirror h1 {
+.tiptap.ProseMirror h1,
+.tiptap-content h1 {
   font-size: 1.5rem;
   font-weight: 700;
   line-height: 1.3;
 }
-.tiptap.ProseMirror h2 {
+.tiptap.ProseMirror h2,
+.tiptap-content h2 {
   font-size: 1.25rem;
   font-weight: 600;
   line-height: 1.35;
 }
-.tiptap.ProseMirror h3 {
+.tiptap.ProseMirror h3,
+.tiptap-content h3 {
   font-size: 1.125rem;
   font-weight: 600;
   line-height: 1.4;
 }
 
 /* Lists */
-.tiptap.ProseMirror ul {
+.tiptap.ProseMirror ul,
+.tiptap-content ul {
   list-style-type: disc;
   padding-left: 1.5rem;
 }
-.tiptap.ProseMirror ol {
+.tiptap.ProseMirror ol,
+.tiptap-content ol {
   list-style-type: decimal;
   padding-left: 1.5rem;
 }
-.tiptap.ProseMirror li {
+.tiptap.ProseMirror li,
+.tiptap-content li {
   margin-top: 0.25em;
 }
 
 /* Blockquote */
-.tiptap.ProseMirror blockquote {
-  border-left: 3px solid theme(colors.zinc.300);
+.tiptap.ProseMirror blockquote,
+.tiptap-content blockquote {
+  border-left: 3px solid var(--color-zinc-300);
   margin: 1em 0;
   padding-left: 1rem;
-  color: theme(colors.zinc.500);
+  color: var(--color-zinc-500);
 }
-.dark .tiptap.ProseMirror blockquote {
-  border-left-color: theme(colors.zinc.600);
-  color: theme(colors.zinc.400);
+.dark .tiptap.ProseMirror blockquote,
+.dark .tiptap-content blockquote {
+  border-left-color: var(--color-zinc-600);
+  color: var(--color-zinc-400);
 }
 
 /* Code block */
-.tiptap.ProseMirror pre {
-  background: theme(colors.zinc.900);
+.tiptap.ProseMirror pre,
+.tiptap-content pre {
+  background: var(--color-zinc-900);
   border-radius: 0.5rem;
-  color: theme(colors.zinc.100);
+  color: var(--color-zinc-100);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 0.8125rem;
   margin: 1em 0;
   overflow-x: auto;
   padding: 0.75rem 1rem;
 }
-.dark .tiptap.ProseMirror pre {
+.dark .tiptap.ProseMirror pre,
+.dark .tiptap-content pre {
   background: #1a1a2e;
 }
-.tiptap.ProseMirror pre code {
+.tiptap.ProseMirror pre code,
+.tiptap-content pre code {
   background: transparent;
   border-radius: 0;
   color: inherit;
@@ -111,40 +125,47 @@ body {
 }
 
 /* Inline code */
-.tiptap.ProseMirror code {
-  background: theme(colors.zinc.100);
+.tiptap.ProseMirror code,
+.tiptap-content code {
+  background: var(--color-zinc-100);
   border-radius: 0.25rem;
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 0.875em;
   padding: 0.15em 0.35em;
 }
-.dark .tiptap.ProseMirror code {
-  background: theme(colors.zinc.800);
+.dark .tiptap.ProseMirror code,
+.dark .tiptap-content code {
+  background: var(--color-zinc-800);
 }
 
 /* Horizontal rule */
-.tiptap.ProseMirror hr {
+.tiptap.ProseMirror hr,
+.tiptap-content hr {
   border: none;
-  border-top: 1px solid theme(colors.zinc.200);
+  border-top: 1px solid var(--color-zinc-200);
   margin: 1.5em 0;
 }
-.dark .tiptap.ProseMirror hr {
-  border-top-color: theme(colors.zinc.700);
+.dark .tiptap.ProseMirror hr,
+.dark .tiptap-content hr {
+  border-top-color: var(--color-zinc-700);
 }
 
 /* Image */
-.tiptap.ProseMirror img {
+.tiptap.ProseMirror img,
+.tiptap-content img {
   border-radius: 0.375rem;
   height: auto;
   max-width: 100%;
 }
 
 /* Link */
-.tiptap.ProseMirror a {
-  color: theme(colors.blue.600);
+.tiptap.ProseMirror a,
+.tiptap-content a {
+  color: var(--color-blue-600);
   text-decoration: underline;
 }
-.tiptap.ProseMirror a:hover {
-  color: theme(colors.blue.800);
+.tiptap.ProseMirror a:hover,
+.tiptap-content a:hover {
+  color: var(--color-blue-800);
 }
 
