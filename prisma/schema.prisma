@@ -233,6 +233,37 @@ model PostTag {
   @@map("blog_post_tags")
 }
 
+model PostDraft {
+  id          Int      @id @default(autoincrement())
+  postId      Int?     @map("post_id")
+
+  title       String
+  slug        String
+  summary     String?  @db.VarChar(500)
+  coverImage  String?  @map("cover_image")
+
+  content     String   @db.LongText
+  contentText String?  @db.Text @map("content_text")
+
+  isTop       Boolean  @default(false) @map("is_top")
+  isRecommend Boolean  @default(false) @map("is_recommend")
+
+  seoTitle       String? @map("seo_title")
+  seoKeywords    String? @map("seo_keywords")
+  seoDescription String? @db.VarChar(500) @map("seo_description")
+
+  tagIds     String?  @map("tag_ids")
+
+  authorId   Int      @map("author_id")
+  categoryId Int?     @map("category_id")
+
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@unique([authorId, slug])
+  @@map("blog_post_draft")
+}
+
 model CmsFile {
   id           Int      @id @default(autoincrement())
   filename     String   @db.VarChar(255)

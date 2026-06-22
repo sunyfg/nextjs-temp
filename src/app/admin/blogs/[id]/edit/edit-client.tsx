@@ -62,6 +62,23 @@ function toSlug(text: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+interface DraftData {
+  id: number;
+  title: string;
+  slug: string;
+  summary: string | null;
+  coverImage: string | null;
+  content: string;
+  isTop: boolean;
+  isRecommend: boolean;
+  seoTitle: string | null;
+  seoKeywords: string | null;
+  seoDescription: string | null;
+  tagIds: string | null;
+  categoryId: number | null;
+  authorId: number;
+}
+
 export default function EditClient({ initialData, isNew, categories, tags }: EditClientProps) {
   const router = useRouter();
   const [form, setForm] = useState<FormState>(() => {
@@ -86,6 +103,38 @@ export default function EditClient({ initialData, isNew, categories, tags }: Edi
   const [error, setError] = useState("");
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [showSeo, setShowSeo] = useState(false);
+  const [draftId, setDraftId] = useState<number | null>(null);
+  const [loadingDraft, setLoadingDraft] = useState(!isNew);
+
+  useEffect(() => {
+    if (!initialData?.id) return;
+    const id = initialData.id as number;
+    fetch(`/api/admin/blogs/drafts?postId=${id}`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.code === 0 && json.data) {
+          const draft: DraftData = json.data;
+          setForm({
+            title: draft.title,
+            slug: draft.slug,
+            summary: draft.summary ?? "",
+            coverImage: draft.coverImage ?? "",
+            content: draft.content,
+            status: (initialData.status as string) ?? "DRAFT",
+            isTop: draft.isTop,
+            isRecommend: draft.isRecommend,
+            categoryId: draft.categoryId,
+            tagIds: draft.tagIds ? JSON.parse(draft.tagIds) : [],
+            seoTitle: draft.seoTitle ?? "",
+            seoKeywords: draft.seoKeywords ?? "",
+            seoDescription: draft.seoDescription ?? "",
+          });
+          setDraftId(draft.id);
+        }
+        setLoadingDraft(false);
+      })
+      .catch(() => setLoadingDraft(false));
+  }, [initialData]);
 
   // Auto-generate slug for new posts
   const isAutoSlugging = useRef(true);
@@ -114,19 +163,67 @@ export default function EditClient({ initialData, isNew, categories, tags }: Edi
     }));
   }
 
-  async function handleSave(status?: string) {
+  async function handleSaveDraft() {
+    setSaving(true);
+    setError("");
+
+    const payload = {
+      title: form.title,
+      slug: form.slug,
+      summary: form.summary,
+      coverImage: form.coverImage,
+      content: form.content,
+      isTop: form.isTop,
+      isRecommend: form.isRecommend,
+      categoryId: form.categoryId,
+      tagIds: JSON.stringify(form.tagIds),
+      seoTitle: form.seoTitle,
+      seoKeywords: form.seoKeywords,
+      seoDescription: form.seoDescription,
+    } as Record<string, unknown>;
+
+    if (!isNew && initialData?.id) {
+      payload.postId = initialData.id as number;
+    }
+
+    const url = draftId
+      ? `/api/admin/blogs/drafts/${draftId}`
+      : "/api/admin/blogs/drafts";
+    const method = draftId ? "PUT" : "POST";
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const json = await res.json();
+      if (json.code === 0) {
+        setDraftId(json.data.id);
+        setSaved(true);
+        message.success("草稿已保存");
+      } else {
+        setError(json.message || "保存失败");
+      }
+    } catch {
+      setError("网络错误");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handlePublish() {
     setSaving(true);
     setError("");
 
     const payload = {
       ...form,
-      status: status ?? form.status,
+      status: "PUBLISHED",
     };
 
     const url = isNew
       ? "/api/admin/blogs"
       : `/api/admin/blogs/${initialData!.id}`;
-
     const method = isNew ? "POST" : "PUT";
 
     try {
@@ -137,7 +234,10 @@ export default function EditClient({ initialData, isNew, categories, tags }: Edi
       });
       const json = await res.json();
       if (json.code === 0) {
-        setSaved(true);
+        if (draftId) {
+          fetch(`/api/admin/blogs/drafts/${draftId}`, { method: "DELETE" }).catch(() => {});
+        }
+        message.success("文章已发布");
         router.push("/admin/blogs/list");
       } else {
         setError(json.message || "保存失败");
@@ -181,7 +281,7 @@ export default function EditClient({ initialData, isNew, categories, tags }: Edi
           </button>
           <button
             type="button"
-            onClick={() => handleSave("DRAFT")}
+            onClick={handleSaveDraft}
             disabled={saving}
             className="rounded-lg border border-zinc-300 bg-white px-4 py-1.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
           >
@@ -189,7 +289,7 @@ export default function EditClient({ initialData, isNew, categories, tags }: Edi
           </button>
           <button
             type="button"
-            onClick={() => handleSave("PUBLISHED")}
+            onClick={handlePublish}
             disabled={saving}
             className="rounded-lg bg-black px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:opacity-50 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
           >
