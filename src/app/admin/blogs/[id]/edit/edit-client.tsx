@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Upload, message } from "antd";
+import type { UploadProps } from "antd";
 import TiptapEditor from "./tiptap-editor";
 
 interface Category {
@@ -82,7 +84,6 @@ export default function EditClient({ initialData, isNew, categories, tags }: Edi
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [showSeo, setShowSeo] = useState(false);
 
@@ -248,21 +249,76 @@ export default function EditClient({ initialData, isNew, categories, tags }: Edi
           {/* Cover Image */}
           <fieldset className="flex flex-col gap-1">
             <label className="text-xs font-medium text-zinc-500">封面图</label>
-            <div className="flex items-center gap-3">
-              <input
-                value={form.coverImage}
-                onChange={(e) => updateField("coverImage", e.target.value)}
-                placeholder="输入图片 URL"
-                className="flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-black outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
-              />
-              {form.coverImage && (
+            {form.coverImage ? (
+              <div className="flex items-center gap-3">
                 <img
                   src={form.coverImage}
                   alt="cover preview"
-                  className="h-12 w-20 flex-shrink-0 rounded object-cover border border-zinc-200 dark:border-zinc-700"
+                  className="h-20 w-32 flex-shrink-0 rounded-lg object-cover border border-zinc-200 dark:border-zinc-700"
                 />
-              )}
-            </div>
+                <div className="flex flex-col gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      window.open(form.coverImage!, "_blank")
+                    }
+                    className="rounded border border-zinc-300 px-2.5 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  >
+                    查看大图
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateField("coverImage", "")}
+                    className="rounded border border-red-300 px-2.5 py-1 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/30"
+                  >
+                    移除
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <Upload.Dragger
+                name="file"
+                action="/api/common/files"
+                data={{ subDir: "blog" }}
+                withCredentials
+                accept="image/*"
+                maxCount={1}
+                showUploadList={false}
+                beforeUpload={(file) => {
+                  const isImage = file.type.startsWith("image/");
+                  if (!isImage) {
+                    message.error("只支持图片文件");
+                    return Upload.LIST_IGNORE;
+                  }
+                  const isLt10M = file.size / 1024 / 1024 < 10;
+                  if (!isLt10M) {
+                    message.error("图片大小不能超过 10MB");
+                    return Upload.LIST_IGNORE;
+                  }
+                  return true;
+                }}
+                onChange={(info) => {
+                  const { status, response } = info.file;
+                  if (status === "uploading") {
+                    message.loading({ content: "上传中...", key: "cover-upload" });
+                  }
+                  if (status === "done") {
+                    message.success({ content: "上传成功", key: "cover-upload" });
+                    const url = response?.data?.accessUrl;
+                    if (url) {
+                      updateField("coverImage", url);
+                    }
+                  }
+                  if (status === "error") {
+                    message.error({ content: "上传失败", key: "cover-upload" });
+                  }
+                }}
+              >
+                <p className="text-3xl">🖼</p>
+                <p className="mt-2 text-sm text-zinc-500">点击或拖拽封面图到此区域上传</p>
+                <p className="mt-1 text-xs text-zinc-400">推荐尺寸 1200×630，支持 JPG / PNG / WebP</p>
+              </Upload.Dragger>
+            )}
           </fieldset>
 
           {/* Rich Text Content */}

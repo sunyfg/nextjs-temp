@@ -6,7 +6,9 @@ import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
 import Underline from "@tiptap/extension-underline";
 import Placeholder from "@tiptap/extension-placeholder";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
+import { Modal, Upload, message } from "antd";
+import type { UploadProps } from "antd";
 
 interface TiptapEditorProps {
   content: string;
@@ -20,7 +22,13 @@ type ToolbarButton = {
   title?: string;
 };
 
-function MenuBar({ editor }: { editor: ReturnType<typeof useEditor> }) {
+function MenuBar({
+  editor,
+  onOpenImageUpload,
+}: {
+  editor: ReturnType<typeof useEditor>;
+  onOpenImageUpload: () => void;
+}) {
   if (!editor) return null;
 
   const buttons: ToolbarButton[] = [
@@ -47,13 +55,6 @@ function MenuBar({ editor }: { editor: ReturnType<typeof useEditor> }) {
     const url = prompt("输入链接地址：");
     if (url) {
       editor.chain().focus().setLink({ href: url }).run();
-    }
-  }
-
-  function addImage() {
-    const url = prompt("输入图片地址：");
-    if (url) {
-      editor.chain().focus().setImage({ src: url }).run();
     }
   }
 
@@ -93,7 +94,7 @@ function MenuBar({ editor }: { editor: ReturnType<typeof useEditor> }) {
       </button>
       <button
         type="button"
-        onClick={addImage}
+        onClick={onOpenImageUpload}
         title="插入图片"
         className="rounded px-2 py-1 text-xs font-medium text-zinc-600 hover:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-800"
       >
@@ -104,6 +105,9 @@ function MenuBar({ editor }: { editor: ReturnType<typeof useEditor> }) {
 }
 
 export default function TiptapEditor({ content, onChange }: TiptapEditorProps) {
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -132,10 +136,90 @@ export default function TiptapEditor({ content, onChange }: TiptapEditorProps) {
     },
   });
 
+  const handleOpenImageUpload = useCallback(() => {
+    setUploadedUrl(null);
+    setImageModalOpen(true);
+  }, []);
+
+  const handleInsertImage = useCallback(() => {
+    if (!editor || !uploadedUrl) return;
+    editor.chain().focus().setImage({ src: uploadedUrl }).run();
+    setImageModalOpen(false);
+    setUploadedUrl(null);
+  }, [editor, uploadedUrl]);
+
+  const uploadProps: UploadProps = {
+    name: "file",
+    action: "/api/common/files",
+    data: { subDir: "blog" },
+    withCredentials: true,
+    accept: "image/*",
+    maxCount: 1,
+    showUploadList: false,
+    beforeUpload(file) {
+      const isImage = file.type.startsWith("image/");
+      if (!isImage) {
+        message.error("只支持图片文件");
+        return Upload.LIST_IGNORE;
+      }
+      const isLt10M = file.size / 1024 / 1024 < 10;
+      if (!isLt10M) {
+        message.error("图片大小不能超过 10MB");
+        return Upload.LIST_IGNORE;
+      }
+      return true;
+    },
+    onChange(info) {
+      const { status, response } = info.file;
+      if (status === "uploading") {
+        message.loading({ content: "上传中...", key: "upload" });
+      }
+      if (status === "done") {
+        message.success({ content: "上传成功", key: "upload" });
+        const url = response?.data?.accessUrl;
+        if (url) {
+          setUploadedUrl(url);
+        }
+      }
+      if (status === "error") {
+        message.error({ content: "上传失败", key: "upload" });
+      }
+    },
+  };
+
   return (
-    <div className="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700">
-      <MenuBar editor={editor} />
-      <EditorContent editor={editor} />
-    </div>
+    <>
+      <div className="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-700">
+        <MenuBar editor={editor} onOpenImageUpload={handleOpenImageUpload} />
+        <EditorContent editor={editor} />
+      </div>
+
+      <Modal
+        title="插入图片"
+        open={imageModalOpen}
+        onCancel={() => setImageModalOpen(false)}
+        onOk={handleInsertImage}
+        okText="插入"
+        cancelText="取消"
+        okButtonProps={{ disabled: !uploadedUrl }}
+      >
+        {uploadedUrl ? (
+          <div className="py-4">
+            <img
+              src={uploadedUrl}
+              alt="uploaded"
+              className="max-h-64 w-full rounded-lg object-contain"
+            />
+            <p className="mt-2 text-center text-xs text-zinc-400">点击「插入」将图片添加到编辑器</p>
+          </div>
+        ) : (
+          <Upload.Dragger {...uploadProps}>
+            <p className="text-4xl">📁</p>
+            <p className="mt-2 text-sm text-zinc-500">点击或拖拽图片到此区域上传</p>
+            <p className="mt-1 text-xs text-zinc-400">支持 JPG / PNG / GIF / WebP，单文件不超过 10MB</p>
+          </Upload.Dragger>
+        )}
+      </Modal>
+    </>
   );
 }
