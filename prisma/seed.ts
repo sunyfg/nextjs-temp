@@ -86,15 +86,7 @@ async function main() {
     create: { userId: editor.id, roleId: editorRole.id },
   });
 
-  const posts = await prisma.post.createMany({
-    data: [
-      { title: 'Hello World', content: 'First blog post' },
-      { title: 'Getting Started', content: 'Welcome to the blog' },
-    ],
-    skipDuplicates: true,
-  });
-
-  console.log(`Seeded: 2 users, ${roles.length} roles, ${posts.count} posts`);
+  console.log(`Seeded: 2 users, ${roles.length} roles`);
   console.log('Default password for all users: 123456');
 }
 
