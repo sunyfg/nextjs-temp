@@ -232,3 +232,55 @@ model PostTag {
   @@id([postId, tagId])
   @@map("blog_post_tags")
 }
+
+model CmsFile {
+  id           Int      @id @default(autoincrement())
+  filename     String   @db.VarChar(255)
+  originalName String   @db.VarChar(255)
+  displayName  String?  @db.VarChar(255)
+  ext          String   @db.VarChar(32)
+  mimeType     String   @db.VarChar(100)
+  size         Int
+  sizeText     String?  @db.VarChar(50)
+
+  rootDir      String   @default("uploads") @db.VarChar(100)
+  subDir       String?  @db.VarChar(255)
+  relativePath String   @db.VarChar(500)
+  absolutePath String?  @db.VarChar(1000)
+  accessUrl    String?  @db.VarChar(500)
+
+  remark       String?  @db.VarChar(500)
+
+  isPublic     Boolean  @default(true)
+  status       Int      @default(1)
+  deleted      Boolean  @default(false)
+
+  createUserId   String? @db.VarChar(64)
+  createUserName String? @db.VarChar(100)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([subDir])
+  @@index([mimeType])
+  @@index([createdAt])
+  @@map("cms_file")
+}
+
+model CmsUploadDir {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(100)
+  dir         String   @unique @db.VarChar(255)
+  description String?  @db.VarChar(500)
+
+  maxSize     Int?
+  allowTypes  String?  @db.VarChar(500)
+
+  enabled     Boolean  @default(true)
+  sort        Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("cms_upload_dir")
+}
