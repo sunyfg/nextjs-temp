@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 :root {
   --background: #ffffff;
@@ -168,4 +168,3 @@ body {
 .tiptap-content a:hover {
   color: var(--color-blue-800);
 }
-
