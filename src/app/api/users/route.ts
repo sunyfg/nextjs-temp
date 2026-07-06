@@ -134,18 +134,9 @@ export async function DELETE(request: Request) {
     return Response.json({ code: 401, message: "Unauthorized" });
   }
 
-  const currentUser = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: {
-      userRoles: {
-        select: { role: { select: { roleCode: true } } },
-      },
-    },
-  });
-
-  const isAdmin = currentUser?.userRoles.some((ur) => ur.role.roleCode === "admin") ?? false;
-  if (!isAdmin) {
-    return Response.json({ code: 403, message: "仅管理员可删除用户" });
+  const permCodes = session.user.permissionCodes ?? [];
+  if (!permCodes.includes("system:user:delete")) {
+    return Response.json({ code: 403, message: "无删除用户权限" });
   }
 
   const body = await request.json();

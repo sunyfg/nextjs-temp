@@ -21,7 +21,7 @@ pnpm db:deploy    # production migrate deploy
 
 - **Node.js >= 20.9.0 required** (Next.js 16). Host has Node 18 via nvm — must run `nvm use 20` before any `pnpm` command.
 - **Database**: MySQL — config via `DATABASE_URL` in env files.
-- **Test users**: `admin@example.com` / `editor@example.com`, password `123456`. Created via `pnpm db:seed`.
+- **Test users**: `admin@123.com` / `editor@example.com`, password `123456`. Created via `pnpm db:seed`.
 
 ## Environment Files
 
@@ -30,7 +30,7 @@ pnpm db:deploy    # production migrate deploy
 | `.env` | Shared defaults | **Committed** | Fallback — safe placeholder values |
 | `.env.local` | Local dev | Ignored | `APP_ENV=local` (default) |
 | `.env.test` | Test | Ignored | `APP_ENV=test` |
-| `.env.prod` | Production | Ignored | `APP_ENV=prod` |
+| `.env.production` | Production | Ignored | `APP_ENV=prod` |
 
 `APP_ENV` controls which file `prisma.config.ts` and `prisma/seed.ts` load. Defaults to `local`.
 Next.js runtime auto-loads `.env` + `.env.local` for dev — no `APP_ENV` needed.

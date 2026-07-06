@@ -11,7 +11,7 @@ const appEnv = process.env["APP_ENV"] || "local";
 const envFiles: Record<string, string> = {
   local: ".env.local",
   test: ".env.test",
-  prod: ".env.prod",
+  prod: ".env.production",
 };
 const envFile = envFiles[appEnv];
 if (envFile) {

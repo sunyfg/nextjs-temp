@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FullPageSkeleton } from '@/app/admin/_components/table-skeleton';
+import { message } from 'antd';
 
 interface CmsFile {
   id: number;
@@ -191,7 +192,7 @@ export default function FilesClient() {
         })
         .catch(() => {});
     } else {
-      alert(json.message || '上传失败');
+      message.error(json.message || '上传失败');
     }
   }
 
@@ -211,7 +212,7 @@ export default function FilesClient() {
       setEditFile(null);
       fetchData();
     } else {
-      alert(json.message || '更新失败');
+      message.error(json.message || '更新失败');
     }
   }
 
@@ -226,7 +227,7 @@ export default function FilesClient() {
       setDeleteFile(null);
       fetchData();
     } else {
-      alert(json.message || '删除失败');
+      message.error(json.message || '删除失败');
     }
   }
 
@@ -296,7 +297,7 @@ export default function FilesClient() {
         })
         .catch(() => {});
     } else {
-      alert(json.message || '创建失败');
+      message.error(json.message || '创建失败');
     }
   }
 
@@ -324,7 +325,7 @@ export default function FilesClient() {
         })
         .catch(() => {});
     } else {
-      alert(json.message || '更新失败');
+      message.error(json.message || '更新失败');
     }
   }
 

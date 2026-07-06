@@ -1,10 +1,9 @@
 /**
- * Start Next.js dev server with environment-specific env files.
+ * Start Next.js production server with environment-specific env files.
  *
  * Usage:
- *   node scripts/next-dev.mjs          # loads .env.local (default)
- *   APP_ENV=test node scripts/next-dev.mjs  # loads .env.test
- *   APP_ENV=prod node scripts/next-dev.mjs  # loads .env.production
+ *   node scripts/next-start.mjs          # loads .env.local (default)
+ *   APP_ENV=prod node scripts/next-start.mjs  # loads .env.production
  */
 import { config } from "dotenv";
 import { spawn } from "node:child_process";
@@ -22,7 +21,7 @@ if (envFile) {
 
 console.log(`[env] APP_ENV=${appEnv} — DATABASE_URL=${process.env.DATABASE_URL}`);
 
-const child = spawn("next", ["dev"], {
+const child = spawn("next", ["start"], {
   stdio: "inherit",
   env: process.env,
   shell: true,

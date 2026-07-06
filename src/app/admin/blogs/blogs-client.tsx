@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FullPageSkeleton } from "@/app/admin/_components/table-skeleton";
+import { message } from "antd";
 
 interface Category {
   id: number;
@@ -133,7 +134,7 @@ export default function BlogsClient() {
       setDeletingPost(null);
       fetchPosts();
     } else {
-      alert(json.message || "删除失败");
+      message.error(json.message || "删除失败");
     }
   }
 
@@ -148,7 +149,7 @@ export default function BlogsClient() {
     if (json.code === 0) {
       fetchPosts();
     } else {
-      alert(json.message || "操作失败");
+      message.error(json.message || "操作失败");
     }
   }
 

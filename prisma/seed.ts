@@ -8,7 +8,7 @@ const appEnv = process.env['APP_ENV'] || 'local';
 const envFiles: Record<string, string> = {
   local: '.env.local',
   test: '.env.test',
-  prod: '.env.prod',
+  prod: '.env.production',
 };
 const envFile = envFiles[appEnv];
 if (envFile) {
@@ -48,16 +48,16 @@ async function main() {
     ),
   );
 
-  const adminRole = roles.find((r) => r.roleCode === 'admin')!;
+  const adminRole = roles.find((r) => r.roleCode === 'super_admin')!;
   const editorRole = roles.find((r) => r.roleCode === 'editor')!;
 
   // Seed users with role assignments
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@example.com' },
+    where: { email: 'admin@123.com' },
     update: {},
     create: {
       name: 'Admin',
-      email: 'admin@example.com',
+      email: 'admin@123.com',
       hashedPassword,
       age: 30,
     },

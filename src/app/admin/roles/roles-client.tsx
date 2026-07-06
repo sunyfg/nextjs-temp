@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePermission } from "@/hooks/usePermission";
 import { FullPageSkeleton } from "../_components/table-skeleton";
+import { message } from "antd";
 
 interface Role {
   id: number;
@@ -202,7 +203,7 @@ export default function RolesClient() {
       setShowCreateModal(false);
       fetchRoles();
     } else {
-      alert(json.message);
+      message.error(json.message);
     }
   }
 
@@ -236,7 +237,7 @@ export default function RolesClient() {
       setEditingRole(null);
       fetchRoles();
     } else {
-      alert(json.message);
+      message.error(json.message);
     }
   }
 
@@ -251,7 +252,7 @@ export default function RolesClient() {
       setDeletingRole(null);
       fetchRoles();
     } else {
-      alert(json.message);
+      message.error(json.message);
     }
   }
 
@@ -266,7 +267,7 @@ export default function RolesClient() {
       if (json.code === 0) {
         setSelectedPermIds(new Set(json.data.permissionIds));
       } else {
-        alert(json.message);
+        message.error(json.message);
       }
     } catch {
       alert("加载权限配置失败");
@@ -307,7 +308,7 @@ export default function RolesClient() {
       if (json.code === 0) {
         setPermModalRole(null);
       } else {
-        alert(json.message);
+        message.error(json.message);
       }
     } catch {
       alert("保存权限配置失败");

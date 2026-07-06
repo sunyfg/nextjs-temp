@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePermission } from "@/hooks/usePermission";
 import { FullPageSkeleton } from "../_components/table-skeleton";
+import { message } from "antd";
 
 interface Role {
   id: number;
@@ -110,6 +111,8 @@ export default function UsersClient() {
       setForm(emptyForm);
       setShowCreateModal(false);
       fetchUsers();
+    } else {
+      message.error(json.message || "创建失败");
     }
   }
 
@@ -145,6 +148,8 @@ export default function UsersClient() {
     if (json.code === 0) {
       setEditingUser(null);
       fetchUsers();
+    } else {
+      message.error(json.message || "更新失败");
     }
   }
 
@@ -158,6 +163,8 @@ export default function UsersClient() {
     if (json.code === 0) {
       setDeletingUser(null);
       fetchUsers();
+    } else {
+      message.error(json.message || "删除失败");
     }
   }
 

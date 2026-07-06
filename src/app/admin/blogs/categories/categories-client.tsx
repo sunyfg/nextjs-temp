@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FullPageSkeleton } from "@/app/admin/_components/table-skeleton";
+import { message } from "antd";
 
 interface Category {
   id: number;
@@ -135,7 +136,7 @@ export default function CategoriesClient() {
       setDeletingCategory(null);
       fetchCategories();
     } else {
-      alert(json.message || "删除失败");
+      message.error(json.message || "删除失败");
     }
   }
 

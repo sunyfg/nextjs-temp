@@ -65,7 +65,7 @@ pnpm dev
 | `.env` | 共享默认值 | **提交** | 兜底 —— 安全的占位值 |
 | `.env.local` | 本地开发 | 忽略 | `APP_ENV=local`（默认） |
 | `.env.test` | 测试环境 | 忽略 | `APP_ENV=test` |
-| `.env.prod` | 生产环境 | 忽略 | `APP_ENV=prod` |
+| `.env.production` | 生产环境 | 忽略 | `APP_ENV=prod` |
 
 `APP_ENV` 控制 `prisma.config.ts` 加载哪个文件。开发服务器通过启动脚本自动加载 `.env` + `.env.local`。
 
@@ -88,7 +88,7 @@ AUTH_GITHUB_SECRET=
 ```bash
 pnpm dev              # 本地（默认，加载 .env.local）
 pnpm dev:test         # 测试（加载 .env.test）
-pnpm dev:prod         # 生产（加载 .env.prod）
+pnpm dev:prod         # 生产（加载 .env.production）
 
 # Prisma 命令的 APP_ENV 由对应脚本自动设置：
 pnpm db:migrate       # 本地

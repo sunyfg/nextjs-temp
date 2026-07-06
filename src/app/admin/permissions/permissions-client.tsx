@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePermission } from "@/hooks/usePermission";
 import { FullPageSkeleton } from "../_components/table-skeleton";
+import { message } from "antd";
 
 interface Permission {
   id: number;
@@ -108,7 +109,7 @@ export default function PermissionsClient() {
       setShowCreateModal(false);
       fetchItems();
     } else {
-      alert(json.message);
+      message.error(json.message);
     }
   }
 
@@ -152,7 +153,7 @@ export default function PermissionsClient() {
       setEditingItem(null);
       fetchItems();
     } else {
-      alert(json.message);
+      message.error(json.message);
     }
   }
 
@@ -167,7 +168,7 @@ export default function PermissionsClient() {
       setDeletingItem(null);
       fetchItems();
     } else {
-      alert(json.message);
+      message.error(json.message);
     }
   }
 

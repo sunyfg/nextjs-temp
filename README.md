@@ -51,7 +51,7 @@ Open [http://localhost:3000](http://localhost:3000). Navigate to `/dashboard` or
 
 | Email | Password | Role |
 |---|---|---|
-| `admin@example.com` | `123456` | Admin (all permissions) |
+| `admin@123.com` | `123456` | Admin (all permissions) |
 | `editor@example.com` | `123456` | Editor |
 
 Created via `pnpm db:seed`.
@@ -65,7 +65,7 @@ Created via `pnpm db:seed`.
 | `.env` | Shared defaults | **Committed** | Fallback — safe placeholder values |
 | `.env.local` | Local dev | Ignored | `APP_ENV=local` (default) |
 | `.env.test` | Test | Ignored | `APP_ENV=test` |
-| `.env.prod` | Production | Ignored | `APP_ENV=prod` |
+| `.env.production` | Production | Ignored | `APP_ENV=prod` |
 
 `APP_ENV` controls which file `prisma.config.ts` loads. The dev server auto-loads `.env` + `.env.local` via the bootstrap script.
 
@@ -88,7 +88,7 @@ AUTH_GITHUB_SECRET=
 ```bash
 pnpm dev              # local (default, loads .env.local)
 pnpm dev:test         # test (loads .env.test)
-pnpm dev:prod         # prod (loads .env.prod)
+pnpm dev:prod         # prod (loads .env.production)
 
 # For Prisma commands, APP_ENV is set automatically by each script:
 pnpm db:migrate       # local
