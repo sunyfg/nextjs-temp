@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FullPageSkeleton } from "@/app/dashboard/table-skeleton";
+import { FullPageSkeleton } from "@/app/admin/_components/table-skeleton";
 
 interface Category {
   id: number;

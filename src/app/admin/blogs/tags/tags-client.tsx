@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FullPageSkeleton } from "@/app/dashboard/table-skeleton";
+import { FullPageSkeleton } from "@/app/admin/_components/table-skeleton";
 
 interface Tag {
   id: number;

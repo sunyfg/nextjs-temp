@@ -31,9 +31,12 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files with secrets (gitignored)
-# .env.local
-# .env.test
-# .env.prod
+.env.local
+.env.test
+.env.prod
+
+# opencode agent config
+.omo/
 
 # vercel
 .vercel

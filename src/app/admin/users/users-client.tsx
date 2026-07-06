@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePermission } from "@/hooks/usePermission";
-import { FullPageSkeleton } from "../table-skeleton";
+import { FullPageSkeleton } from "../_components/table-skeleton";
 
 interface Role {
   id: number;

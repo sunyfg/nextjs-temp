@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePermission } from "@/hooks/usePermission";
-import { FullPageSkeleton } from "../table-skeleton";
+import { FullPageSkeleton } from "../_components/table-skeleton";
 
 interface Permission {
   id: number;
@@ -361,7 +361,7 @@ export default function PermissionsClient() {
                   <input
                     value={form.path}
                     onChange={(e) => setForm({ ...form, path: e.target.value })}
-                    placeholder="/dashboard/users"
+                    placeholder="/admin/users"
                     className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-black outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
                   />
                 </fieldset>

@@ -13,7 +13,7 @@ function isGroup(item: NavItem): item is NavGroup {
 }
 
 function isLinkActive(href: string, pathname: string): boolean {
-  if (href === "/dashboard") return pathname === "/dashboard";
+  if (href === "/admin") return pathname === "/admin/dashboard";
   return pathname.startsWith(href);
 }
 
@@ -26,8 +26,6 @@ export default function SidebarNav({ items }: { items: NavItem[] }) {
 
   // Which groups are expanded — auto-expand group containing current page
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(() => {
-    // Initial state: expand groups that contain the current pathname
-    // We pass a function so it runs only once (not SSR doesn't have pathname)
     return new Set<string>();
   });
 

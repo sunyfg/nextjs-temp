@@ -23,7 +23,7 @@ export default function LoginPage() {
     if (result?.error) {
       setError("邮箱或密码错误");
     } else {
-      router.push("/dashboard");
+      router.push("/admin/dashboard");
     }
   }
 
@@ -76,7 +76,7 @@ export default function LoginPage() {
         </div>
 
         <button
-          onClick={() => signIn("github", { callbackUrl: "/dashboard" })}
+          onClick={() => signIn("github", { callbackUrl: "/admin/dashboard" })}
           className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg border border-zinc-300 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">

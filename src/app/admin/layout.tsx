@@ -1,8 +1,8 @@
 import { getCurrentUser } from '@/lib/auth-utils';
 import { prisma } from '@/lib/prisma';
-import SidebarNav from '../dashboard/sidebar-nav';
-import type { NavItem } from '../dashboard/sidebar-nav';
-import UserMenu from '../dashboard/user-menu';
+import SidebarNav from './_components/sidebar-nav';
+import type { NavItem } from './_components/sidebar-nav';
+import UserMenu from './_components/user-menu';
 
 type PermRow = {
   id: number;
