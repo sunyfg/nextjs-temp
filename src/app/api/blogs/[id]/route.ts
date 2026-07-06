@@ -1,5 +1,13 @@
 import { prisma } from "@/lib/prisma";
 
+/**
+ * 获取公开博客文章详情（支持数字 ID 或 slug 查询）
+ * 同时递增文章浏览次数
+ *
+ * @param id - 文章数字 ID 或 slug（路径参数）
+ * @returns { code: 0, message: "success", data: Post }
+ * @throws { code: 404, message: "Post not found" }
+ */
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },

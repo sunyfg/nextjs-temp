@@ -2,6 +2,17 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
 
+/**
+ * GET /api/admin/blogs - 获取博客文章列表（分页+搜索+筛选）
+ * @auth 需要登录（401）
+ * @query keyword - 关键字搜索（标题/摘要/正文）
+ * @query status - 状态筛选（DRAFT/PUBLISHED/ARCHIVED）
+ * @query categoryId - 分类ID筛选
+ * @query startDate/endDate - 发布日期范围筛选
+ * @query page - 页码（默认1）
+ * @query pageSize - 每页数量（默认20，最大100）
+ * @returns { code: 0, data: { items: Post[], total: number, page: number, pageSize: number } }
+ */
 export async function GET(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -86,6 +97,22 @@ export async function GET(request: Request) {
   });
 }
 
+/**
+ * POST /api/admin/blogs - 创建博客文章
+ * @auth 需要登录（401）
+ * @body title - 标题（必填）
+ * @body slug - URL别名（必填，唯一）
+ * @body summary - 摘要
+ * @body coverImage - 封面图
+ * @body content - HTML内容
+ * @body status - 状态（DRAFT/PUBLISHED，默认DRAFT）
+ * @body isTop - 是否置顶
+ * @body isRecommend - 是否推荐
+ * @body categoryId - 分类ID
+ * @body tagIds - 标签ID数组
+ * @body authorId - 作者ID（可选，默认取第一个博客用户）
+ * @returns { code: 0, data: Post }
+ */
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {

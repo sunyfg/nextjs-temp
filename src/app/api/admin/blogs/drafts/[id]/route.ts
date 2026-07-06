@@ -1,6 +1,12 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
+/**
+ * DELETE /api/admin/blogs/drafts/[id] - 删除指定草稿
+ * @auth 需要登录（401）
+ * @param id - 草稿ID（路径参数）
+ * @returns { code: 0, message: "草稿已删除" }
+ */
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -26,6 +32,21 @@ export async function DELETE(
   return Response.json({ code: 0, message: "草稿已删除" });
 }
 
+/**
+ * PUT /api/admin/blogs/drafts/[id] - 更新指定草稿
+ * @auth 需要登录（401）
+ * @param id - 草稿ID（路径参数）
+ * @body title - 标题
+ * @body slug - URL别名
+ * @body summary - 摘要
+ * @body coverImage - 封面图
+ * @body content - HTML内容
+ * @body isTop - 是否置顶
+ * @body isRecommend - 是否推荐
+ * @body categoryId - 分类ID
+ * @body tagIds - 标签ID数组
+ * @returns { code: 0, data: PostDraft }
+ */
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> },

@@ -23,11 +23,21 @@ async function checkPermissionAdmin() {
   return null;
 }
 
+/**
+ * GET /api/permissions - 获取所有权限项列表，按父级ID和排序号升序排列
+ * @returns SysPermission[]
+ */
 export async function GET() {
   const permissions = await prisma.sysPermission.findMany({ orderBy: [{ parentId: "asc" }, { sortOrder: "asc" }] });
   return Response.json({ code: 0, message: "success", data: permissions });
 }
 
+/**
+ * POST /api/permissions - 创建新的权限项
+ * @requires MANAGE_PERMISSIONS_ROLES 权限
+ * @body { permissionName: string, type: "CATALOG"|"MENU"|"BUTTON"|"API", parentId?: number, permissionCode?: string, path?: string, component?: string, icon?: string, visible?: number, status?: number, sortOrder?: number }
+ * @returns SysPermission
+ */
 export async function POST(request: Request) {
   const err = await checkPermissionAdmin();
   if (err) return err;
@@ -59,6 +69,12 @@ export async function POST(request: Request) {
   return Response.json({ code: 0, message: "权限创建成功", data: permission });
 }
 
+/**
+ * PUT /api/permissions - 更新指定权限项
+ * @requires MANAGE_PERMISSIONS_ROLES 权限
+ * @body { id: number, permissionName?: string, type?: "CATALOG"|"MENU"|"BUTTON"|"API", parentId?: number, permissionCode?: string, path?: string, component?: string, icon?: string, visible?: number, status?: number, sortOrder?: number }
+ * @returns SysPermission
+ */
 export async function PUT(request: Request) {
   const err = await checkPermissionAdmin();
   if (err) return err;
@@ -93,6 +109,12 @@ export async function PUT(request: Request) {
   return Response.json({ code: 0, message: "权限更新成功", data: permission });
 }
 
+/**
+ * DELETE /api/permissions - 删除指定权限项
+ * @requires MANAGE_PERMISSIONS_ROLES 权限
+ * @body { id: number }
+ * @returns { code: 0, message: "权限删除成功" }
+ */
 export async function DELETE(request: Request) {
   const err = await checkPermissionAdmin();
   if (err) return err;

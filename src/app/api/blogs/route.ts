@@ -1,5 +1,15 @@
 import { prisma } from "@/lib/prisma";
 
+/**
+ * 获取公开博客文章列表（支持分页、分类、标签、关键词筛选）
+ *
+ * @query category - 分类 slug（可选）
+ * @query tag - 标签 slug（可选）
+ * @query keyword - 关键词搜索标题/摘要（可选）
+ * @query page - 页码，默认 1（可选）
+ * @query pageSize - 每页条数，默认 10，最大 50（可选）
+ * @returns { code: 0, message: "success", data: { items: Post[], total: number, page: number, pageSize: number } }
+ */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const categorySlug = searchParams.get("category")?.trim() || "";

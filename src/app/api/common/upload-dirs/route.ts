@@ -1,6 +1,12 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
+/**
+ * 获取上传目录列表（需登录）
+ *
+ * @auth 需要用户登录
+ * @returns { code: 0, message: "success", data: CmsUploadDir[] }
+ */
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id) {
@@ -14,6 +20,14 @@ export async function GET() {
   return Response.json({ code: 0, message: "success", data: dirs });
 }
 
+/**
+ * 创建上传目录配置（需登录）
+ *
+ * @auth 需要用户登录
+ * @body { name: string, dir: string, description?: string, maxSize?: number, allowTypes?: string, enabled?: boolean, sort?: number }
+ * @returns { code: 0, message: "创建成功", data: CmsUploadDir }
+ * @throws { code: 400, message: "name is required" | "dir is required" } | { code: 409, message: "目录标识已存在" }
+ */
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {

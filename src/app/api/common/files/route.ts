@@ -3,6 +3,17 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
 import { saveUploadedFile } from "@/lib/file-upload";
 
+/**
+ * 获取文件列表（需登录）
+ *
+ * @auth 需要用户登录
+ * @query keyword - 搜索关键词（可选，匹配原始文件名、显示名称、备注）
+ * @query mimeType - MIME 类型前缀筛选（可选）
+ * @query subDir - 子目录筛选（可选）
+ * @query page - 页码，默认 1（可选）
+ * @query pageSize - 每页条数，默认 20，最大 100（可选）
+ * @returns { code: 0, message: "success", data: { items: CmsFile[], total: number, page: number, pageSize: number } }
+ */
 export async function GET(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -51,6 +62,14 @@ export async function GET(request: Request) {
   });
 }
 
+/**
+ * 上传文件（需登录）
+ *
+ * @auth 需要用户登录
+ * @body form-data: file (File), subDir (string, 可选), displayName (string, 可选), remark (string, 可选)
+ * @returns { code: 0, message: "上传成功", data: CmsFile }
+ * @throws { code: 400, message: "file is required" | 文件上传失败错误消息 }
+ */
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {

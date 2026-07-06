@@ -23,11 +23,21 @@ async function checkRoleAdmin() {
   return null;
 }
 
+/**
+ * GET /api/roles - 获取所有角色列表，按排序号升序排列
+ * @returns SysRole[]
+ */
 export async function GET() {
   const roles = await prisma.sysRole.findMany({ orderBy: { sortOrder: "asc" } });
   return Response.json({ code: 0, message: "success", data: roles });
 }
 
+/**
+ * POST /api/roles - 创建新角色
+ * @requires MANAGE_ROLES_ROLES 权限
+ * @body { roleCode: string, roleName: string, description?: string, status?: number, sortOrder?: number }
+ * @returns SysRole
+ */
 export async function POST(request: Request) {
   const err = await checkRoleAdmin();
   if (err) return err;
@@ -59,6 +69,12 @@ export async function POST(request: Request) {
   return Response.json({ code: 0, message: "角色创建成功", data: role });
 }
 
+/**
+ * PUT /api/roles - 更新指定角色信息
+ * @requires MANAGE_ROLES_ROLES 权限
+ * @body { id: number, roleCode?: string, roleName?: string, description?: string, status?: number, sortOrder?: number }
+ * @returns SysRole
+ */
 export async function PUT(request: Request) {
   const err = await checkRoleAdmin();
   if (err) return err;
@@ -95,6 +111,12 @@ export async function PUT(request: Request) {
   return Response.json({ code: 0, message: "角色更新成功", data: role });
 }
 
+/**
+ * DELETE /api/roles - 删除指定角色
+ * @requires MANAGE_ROLES_ROLES 权限
+ * @body { id: number }
+ * @returns { code: 0, message: "角色删除成功" }
+ */
 export async function DELETE(request: Request) {
   const err = await checkRoleAdmin();
   if (err) return err;

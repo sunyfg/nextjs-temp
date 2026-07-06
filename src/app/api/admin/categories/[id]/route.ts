@@ -1,6 +1,18 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
+/**
+ * PUT /api/admin/categories/[id] - 更新分类
+ * @auth 需要登录（401）
+ * @param id - 分类 ID（路径参数，无效返回 400）
+ * @body name (string) - 分类名称（可选）
+ * @body slug (string) - 分类别名（可选，重复返回 409）
+ * @body description (string) - 描述（可选）
+ * @body sort (number) - 排序值（可选）
+ * @body visible (boolean) - 是否可见（可选）
+ * @throws 404 - 分类不存在
+ * @returns { code: 0, message: "分类更新成功", data: Category }
+ */
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -66,6 +78,14 @@ export async function PUT(
   return Response.json({ code: 0, message: "分类更新成功", data: category });
 }
 
+/**
+ * DELETE /api/admin/categories/[id] - 删除分类
+ * @auth 需要登录（401）
+ * @param id - 分类 ID（路径参数）
+ * @throws 404 - 分类不存在
+ * @throws 400 - 分类下有文章，无法删除
+ * @returns { code: 0, message: "分类删除成功" }
+ */
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },

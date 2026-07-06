@@ -2,6 +2,11 @@ import bcrypt from "bcryptjs";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
+/**
+ * GET /api/users - 获取用户列表（支持名称搜索），按创建时间倒序
+ * @query name - 按用户名称模糊搜索（可选）
+ * @returns { code: 0, data: User[] }
+ */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const name = searchParams.get("name")?.trim() || "";
@@ -33,6 +38,11 @@ export async function GET(request: Request) {
   return Response.json({ code: 0, message: "success", data });
 }
 
+/**
+ * POST /api/users - 创建新用户（可指定角色）
+ * @body { name: string, email: string, password?: string, image?: string, age?: number, phone?: string, roleIds?: number[] }
+ * @returns { code: 0, data: User }
+ */
 export async function POST(request: Request) {
   const body = await request.json();
 
@@ -82,6 +92,11 @@ export async function POST(request: Request) {
   });
 }
 
+/**
+ * PUT /api/users - 更新用户信息（可修改角色和密码）
+ * @body { id: number, name?: string, email?: string, password?: string, image?: string, age?: number, phone?: string, roleIds?: number[] }
+ * @returns { code: 0, data: User }
+ */
 export async function PUT(request: Request) {
   const body = await request.json();
 
@@ -128,6 +143,12 @@ export async function PUT(request: Request) {
   return Response.json({ code: 0, message: "用户更新成功", data: user });
 }
 
+/**
+ * DELETE /api/users - 删除指定用户
+ * @requires system:user:delete 权限
+ * @body { id: number }
+ * @returns { code: 0, message: "用户删除成功" }
+ */
 export async function DELETE(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {

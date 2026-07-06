@@ -1,6 +1,12 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
+/**
+ * GET /api/admin/categories - 获取分类列表
+ * @auth 需要登录（401）
+ * @query name - 按名称搜索（可选）
+ * @returns { code: 0, message: "success", data: Category[] }
+ */
 export async function GET(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -18,6 +24,16 @@ export async function GET(request: Request) {
   return Response.json({ code: 0, message: "success", data: categories });
 }
 
+/**
+ * POST /api/admin/categories - 创建分类
+ * @auth 需要登录（401）
+ * @body name (string) - 分类名称（必填）
+ * @body slug (string) - 分类别名（必填，需唯一，重复返回 409）
+ * @body description (string) - 描述（可选）
+ * @body sort (number) - 排序值（可选，默认 0）
+ * @body visible (boolean) - 是否可见（可选，默认 true）
+ * @returns { code: 0, message: "分类创建成功", data: Category }
+ */
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {

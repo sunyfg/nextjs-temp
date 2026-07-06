@@ -1,6 +1,13 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
+/**
+ * GET /api/admin/blogs/drafts - 获取博客草稿
+ * @auth 需要登录（401）
+ * @query postId - 关联的文章ID（与slug二选一）
+ * @query slug - 文章URL别名（与postId二选一）
+ * @returns { code: 0, data: PostDraft | null }
+ */
 export async function GET(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -58,6 +65,21 @@ export async function GET(request: Request) {
   return Response.json({ code: 0, message: "success", data: null });
 }
 
+/**
+ * POST /api/admin/blogs/drafts - 创建/更新草稿（upsert，按 authorId+slug 唯一）
+ * @auth 需要登录（401）
+ * @body title - 标题（必填）
+ * @body slug - URL别名（必填，用于upsert标识）
+ * @body summary - 摘要
+ * @body coverImage - 封面图
+ * @body content - HTML内容
+ * @body isTop - 是否置顶
+ * @body isRecommend - 是否推荐
+ * @body categoryId - 分类ID
+ * @body tagIds - 标签ID数组
+ * @body postId - 关联的文章ID（编辑已有文章时传入）
+ * @returns { code: 0, data: PostDraft }
+ */
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {

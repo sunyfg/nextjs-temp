@@ -1,6 +1,24 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
+/**
+ * PUT /api/admin/blogs/[id] - 更新博客文章
+ * @auth 需要登录（401）
+ * @param id - 文章ID（路径参数）
+ * @body title - 标题
+ * @body slug - URL别名（唯一）
+ * @body summary - 摘要
+ * @body coverImage - 封面图
+ * @body content - HTML内容
+ * @body status - 状态（DRAFT/PUBLISHED/ARCHIVED）
+ * @body isTop - 是否置顶
+ * @body isRecommend - 是否推荐
+ * @body categoryId - 分类ID
+ * @body tagIds - 标签ID数组
+ * @body authorId - 作者ID
+ * @body seoTitle/seoKeywords/seoDescription - SEO信息
+ * @returns { code: 0, data: Post }
+ */
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -100,6 +118,12 @@ export async function PUT(
   });
 }
 
+/**
+ * DELETE /api/admin/blogs/[id] - 删除博客文章（软删除）
+ * @auth 需要登录（401）
+ * @param id - 文章ID（路径参数）
+ * @returns { code: 0, message: "文章删除成功" }
+ */
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },

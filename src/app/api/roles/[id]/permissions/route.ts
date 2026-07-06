@@ -23,6 +23,12 @@ async function checkRoleAdmin() {
   return null;
 }
 
+/**
+ * GET /api/roles/{id}/permissions - 获取指定角色已分配的权限 ID 列表
+ * @requires MANAGE_ROLES_ROLES 权限
+ * @param id - 角色 ID（路径参数）
+ * @returns { code: 0, data: { permissionIds: number[] } }
+ */
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -53,6 +59,13 @@ export async function GET(
   });
 }
 
+/**
+ * PUT /api/roles/{id}/permissions - 为角色分配权限（全量替换）
+ * @requires MANAGE_ROLES_ROLES 权限
+ * @param id - 角色 ID（路径参数）
+ * @body { permissionIds: number[] }
+ * @returns { code: 0, message: "权限配置成功" }
+ */
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }

@@ -36,6 +36,11 @@ function buildMenuTree(
   return roots;
 }
 
+/**
+ * GET /api/user/me - 获取当前登录用户信息、角色、权限编码和菜单树
+ * @auth 需要用户登录
+ * @returns { code: 0, data: { user, roles, permissions: string[], menus: MenuNode[] } }
+ */
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id) {

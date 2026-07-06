@@ -2,6 +2,14 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { deleteUploadedFile } from "@/lib/file-upload";
 
+/**
+ * 获取单个文件详情（需登录）
+ *
+ * @auth 需要用户登录
+ * @param id - 文件 ID（路径参数）
+ * @returns { code: 0, message: "success", data: CmsFile }
+ * @throws { code: 400, message: "invalid id" } | { code: 404, message: "文件不存在" }
+ */
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -25,6 +33,15 @@ export async function GET(
   return Response.json({ code: 0, message: "success", data: file });
 }
 
+/**
+ * 更新文件信息（需登录）
+ *
+ * @auth 需要用户登录
+ * @param id - 文件 ID（路径参数）
+ * @body { displayName?: string, remark?: string, isPublic?: boolean, status?: number }
+ * @returns { code: 0, message: "更新成功", data: CmsFile }
+ * @throws { code: 400, message: "invalid id" | "没有需要更新的字段" } | { code: 404, message: "文件不存在" }
+ */
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -73,6 +90,15 @@ export async function PUT(
   return Response.json({ code: 0, message: "更新成功", data: updated });
 }
 
+/**
+ * 软删除文件（需登录）
+ * 标记数据库记录为已删除，并从磁盘移除实际文件
+ *
+ * @auth 需要用户登录
+ * @param id - 文件 ID（路径参数）
+ * @returns { code: 0, message: "删除成功" }
+ * @throws { code: 400, message: "invalid id" } | { code: 404, message: "文件不存在" }
+ */
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },

@@ -1,6 +1,15 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
+/**
+ * 更新上传目录配置（需登录）
+ *
+ * @auth 需要用户登录
+ * @param id - 目录 ID（路径参数）
+ * @body { name?: string, dir?: string, description?: string, maxSize?: number, allowTypes?: string, enabled?: boolean, sort?: number }
+ * @returns { code: 0, message: "更新成功", data: CmsUploadDir }
+ * @throws { code: 400, message: "invalid id" | "name is required" | "dir is required" | "没有需要更新的字段" } | { code: 404, message: "目录不存在" } | { code: 409, message: "目录标识已存在" }
+ */
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -70,6 +79,14 @@ export async function PUT(
   return Response.json({ code: 0, message: "更新成功", data: updated });
 }
 
+/**
+ * 删除上传目录配置（需登录）
+ *
+ * @auth 需要用户登录
+ * @param id - 目录 ID（路径参数）
+ * @returns { code: 0, message: "删除成功" }
+ * @throws { code: 400, message: "invalid id" } | { code: 404, message: "目录不存在" }
+ */
 export async function DELETE(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
